@@ -1,4 +1,4 @@
-// app/game/[color]/page.jsx - FIXED VERSION v4
+// app/game/[color]/page.jsx
 "use client";
 
 import {
@@ -15,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 
 // ==========================
-// Wrapper để bọc Suspense
+// Wrapper để bọc Suspense (useSearchParams)
 // ==========================
 export default function GameOnlinePageWrapper() {
   return (
@@ -54,7 +54,7 @@ function GameOnlinePage() {
 
   // Game state
   const [status, setStatus] = useState("⏳ Đang kết nối...");
-  the [pgn, setPgn] = useState("");
+  const [pgn, setPgn] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -71,7 +71,9 @@ function GameOnlinePage() {
   const boardRef = useRef(null);
   const roomJoined = useRef(false);
 
+  // ==========================
   // Kiểm tra script đã load sẵn chưa
+  // ==========================
   useEffect(() => {
     const checkScripts = () => {
       if (
@@ -93,7 +95,9 @@ function GameOnlinePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // ==========================
   // Cleanup khi unmount
+  // ==========================
   useEffect(() => {
     return () => {
       console.log("🧹 [GamePage] Cleanup on unmount");
@@ -117,7 +121,9 @@ function GameOnlinePage() {
     };
   }, [resetGameState]);
 
-  // Không có mã phòng
+  // ==========================
+  // Nếu không có room code
+  // ==========================
   if (!roomCode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -134,7 +140,9 @@ function GameOnlinePage() {
     );
   }
 
+  // ==========================
   // Join / create room (chỉ chạy 1 lần)
+  // ==========================
   useEffect(() => {
     if (!socket || !isConnected) {
       console.log("⏳ Waiting for socket...");
@@ -165,7 +173,58 @@ function GameOnlinePage() {
     joinRoom,
   ]);
 
+  // ==========================
+  // Update game status  (KHAI BÁO TRƯỚC KHI DÙNG TRONG useEffect)
+  // ==========================
+  const updateGameStatus = useCallback(() => {
+    const g = gameRef.current;
+    if (!g) return;
+
+    const turn = g.turn() === "b" ? "Đen" : "Trắng";
+    const isMyTurn =
+      (g.turn() === "w" && playerColor === "white") ||
+      (g.turn() === "b" && playerColor === "black");
+
+    let s = `${isMyTurn ? "🔄" : "⏱️"} ${turn}${
+      isMyTurn ? " (Bạn)" : ""
+    } đến lượt`;
+
+    if (g.in_checkmate()) {
+      const winner = g.turn() === "w" ? "black" : "white";
+      s = `🎉 Chiếu hết! ${g.turn() === "w" ? "Trắng" : "Đen"} thua!`;
+      setGameOver(true);
+      socket?.emit("checkmate", { winner, pgn: g.pgn(), fen: g.fen() });
+    } else if (g.in_stalemate()) {
+      s = "½-½ Hòa - Bí quân";
+      setGameOver(true);
+      socket?.emit("stalemate", { pgn: g.pgn(), fen: g.fen() });
+    } else if (g.in_threefold_repetition()) {
+      s = "½-½ Hòa - Lặp 3 lần";
+      setGameOver(true);
+      socket?.emit("drawByRepetition", { pgn: g.pgn(), fen: g.fen() });
+    } else if (g.insufficient_material()) {
+      s = "½-½ Hòa - Không đủ quân";
+      setGameOver(true);
+      socket?.emit("drawByMaterial", { pgn: g.pgn(), fen: g.fen() });
+    } else if (g.in_draw()) {
+      s = "½-½ Hòa";
+      setGameOver(true);
+      socket?.emit("drawGeneric", { pgn: g.pgn(), fen: g.fen() });
+    } else if (g.in_check()) {
+      s += " ⚠️ Chiếu!";
+    }
+
+    setStatus(s);
+    setPgn(g.pgn() || "");
+
+    if (socket && g.pgn() && !gameOver) {
+      socket.emit("updatePgn", g.pgn());
+    }
+  }, [socket, playerColor, gameOver]);
+
+  // ==========================
   // Socket listeners
+  // ==========================
   useEffect(() => {
     if (!socket) return;
 
@@ -252,54 +311,9 @@ function GameOnlinePage() {
     };
   }, [socket, playerColor, updateGameStatus]);
 
-  // Update game status
-  const updateGameStatus = useCallback(() => {
-    const g = gameRef.current;
-    if (!g) return;
-
-    const turn = g.turn() === "b" ? "Đen" : "Trắng";
-    const isMyTurn =
-      (g.turn() === "w" && playerColor === "white") ||
-      (g.turn() === "b" && playerColor === "black");
-
-    let s = `${isMyTurn ? "🔄" : "⏱️"} ${turn}${
-      isMyTurn ? " (Bạn)" : ""
-    } đến lượt`;
-
-    if (g.in_checkmate()) {
-      const winner = g.turn() === "w" ? "black" : "white";
-      s = `🎉 Chiếu hết! ${g.turn() === "w" ? "Trắng" : "Đen"} thua!`;
-      setGameOver(true);
-      socket?.emit("checkmate", { winner, pgn: g.pgn(), fen: g.fen() });
-    } else if (g.in_stalemate()) {
-      s = "½-½ Hòa - Bí quân";
-      setGameOver(true);
-      socket?.emit("stalemate", { pgn: g.pgn(), fen: g.fen() });
-    } else if (g.in_threefold_repetition()) {
-      s = "½-½ Hòa - Lặp 3 lần";
-      setGameOver(true);
-      socket?.emit("drawByRepetition", { pgn: g.pgn(), fen: g.fen() });
-    } else if (g.insufficient_material()) {
-      s = "½-½ Hòa - Không đủ quân";
-      setGameOver(true);
-      socket?.emit("drawByMaterial", { pgn: g.pgn(), fen: g.fen() });
-    } else if (g.in_draw()) {
-      s = "½-½ Hòa";
-      setGameOver(true);
-      socket?.emit("drawGeneric", { pgn: g.pgn(), fen: g.fen() });
-    } else if (g.in_check()) {
-      s += " ⚠️ Chiếu!";
-    }
-
-    setStatus(s);
-    setPgn(g.pgn() || "");
-
-    if (socket && g.pgn() && !gameOver) {
-      socket.emit("updatePgn", g.pgn());
-    }
-  }, [socket, playerColor, gameOver]);
-
+  // ==========================
   // Khởi tạo bàn cờ
+  // ==========================
   useEffect(() => {
     if (!scriptsReady) {
       console.log("⏳ Waiting for scripts...");
@@ -395,13 +409,17 @@ function GameOnlinePage() {
     updateGameStatus,
   ]);
 
-  // Script loaded
+  // ==========================
+  // Script loaded callback
+  // ==========================
   const handleScriptsLoaded = useCallback(() => {
     console.log("✅ All scripts loaded via Script component");
     setScriptsReady(true);
   }, []);
 
+  // ==========================
   // Actions
+  // ==========================
   const handleResign = () => {
     if (typeof window !== "undefined") {
       const ok = window.confirm("Bạn có chắc muốn xin thua?");
@@ -447,11 +465,14 @@ function GameOnlinePage() {
     router.push("/room");
   };
 
+  // ==========================
+  // JSX
+  // ==========================
   return (
     <>
       <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
 
-      {/* Load scripts */}
+      {/* Load scripts lần đầu */}
       {!scriptsReady && (
         <Script
           src="/lib/jquery-3.7.0.min.js"
@@ -529,6 +550,7 @@ function GameOnlinePage() {
             </div>
           )}
 
+          {/* Debug nhỏ */}
           <div className="text-xs text-gray-500 text-center mb-2">
             Scripts: {scriptsReady ? "✅" : "⏳"} | Socket:{" "}
             {isConnected ? "✅" : "❌"} | Room: {roomCode}
@@ -557,7 +579,7 @@ function GameOnlinePage() {
             </div>
 
             {/* Panel */}
-            <div className="card p-6 space-y-4 h-fit sticky top-4">
+            <div className="card p-6 space-y-4 h-fit lg:sticky lg:top-4">
               <h2 className="font-semibold text-lg text-gray-200">
                 Thông tin ván đấu
               </h2>

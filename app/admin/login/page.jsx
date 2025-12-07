@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import "bootstrap/dist/css/bootstrap.min.css"; // nhớ đã cài: npm i bootstrap
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -152,499 +153,413 @@ export default function AdminLoginPage() {
 
   return (
     <div
+      className="min-vh-100 d-flex align-items-center justify-content-center"
       style={{
         width: "100%",
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         background: "#04081C",
         padding: 24,
       }}
     >
-      {/* Card login */}
       <div
+        className="card border-0 shadow-lg w-100"
         style={{
-          width: "100%",
           maxWidth: 960,
-          background: "#272b44",
           borderRadius: 24,
-          boxShadow: "0 28px 80px rgba(0,0,0,0.55)",
-          display: "flex",
+          background: "#272b44",
           overflow: "hidden",
         }}
       >
-        {/* Bên trái: logo + quân cờ lớn */}
-        <div
-          style={{
-            width: 320,
-            padding: 32,
-            color: "#fff",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {/* Logo + chữ */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 24,
-            }}
-          >
-            <span
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 12,
-                background:
-                  "radial-gradient(circle at 30% 20%, #38bdf8, #1d4ed8)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 800,
-                fontSize: 18,
-              }}
-            >
-              ♚
-            </span>
-            <span style={{ fontSize: 20, fontWeight: 700 }}>Chess Admin</span>
-          </div>
-
-          {/* Quân cờ */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 8,
-            }}
-          >
-            <div
-              style={{
-                width: 380,
-                height: 380,
-                position: "relative",
-              }}
-            >
-              <Image
-                src="/img/QUAN_CO.png"
-                alt="Chess King"
-                fill
+        <div className="row g-0">
+          {/* Bên trái: logo + quân cờ lớn (ẩn trên mobile, hiện từ md trở lên) */}
+          <div className="col-md-5 d-none d-md-flex flex-column text-white p-4">
+            {/* Logo + chữ */}
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <span
                 style={{
-                  objectFit: "contain",
-                }}
-                priority
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bên phải: form login + tabs */}
-        <div
-          style={{
-            flex: 1,
-            padding: "48px 64px",
-            color: "#e5e7eb",
-          }}
-        >
-          {/* Badge Admin Panel */}
-          <div
-            style={{
-              padding: "6px 16px",
-              display: "inline-block",
-              background: "rgba(59,130,246,0.2)",
-              borderRadius: 999,
-              fontSize: 12,
-              marginBottom: 12,
-            }}
-          >
-            Admin Panel
-          </div>
-
-          <h1
-            style={{
-              color: "#FFF",
-              fontSize: 26,
-              fontWeight: 700,
-              marginBottom: 4,
-            }}
-          >
-            Welcome back!
-          </h1>
-
-          <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 20 }}>
-            Chọn phương thức đăng nhập cho khu vực quản trị.
-          </p>
-
-          {/* Tabs */}
-          <div
-            style={{
-              display: "flex",
-              background: "rgba(15,23,42,0.7)",
-              borderRadius: 999,
-              padding: 4,
-              marginBottom: 16,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("password");
-                setError("");
-                setInfo("");
-              }}
-              style={{
-                flex: 1,
-                border: "none",
-                borderRadius: 999,
-                padding: "8px 12px",
-                fontSize: 13,
-                cursor: "pointer",
-                background:
-                  activeTab === "password"
-                    ? "#20d1ff"
-                    : "transparent",
-                color: activeTab === "password" ? "#0f172a" : "#9ca3af",
-                fontWeight: activeTab === "password" ? 600 : 500,
-                transition: "all 0.2s ease",
-              }}
-            >
-              Đăng nhập bằng mật khẩu
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("email");
-                setError("");
-                setInfo("");
-              }}
-              style={{
-                flex: 1,
-                border: "none",
-                borderRadius: 999,
-                padding: "8px 12px",
-                fontSize: 13,
-                cursor: "pointer",
-                background:
-                  activeTab === "email"
-                    ? "#20d1ff"
-                    : "transparent",
-                color: activeTab === "email" ? "#0f172a" : "#9ca3af",
-                fontWeight: activeTab === "email" ? 600 : 500,
-                transition: "all 0.2s ease",
-              }}
-            >
-              Đăng nhập bằng email
-            </button>
-          </div>
-
-          {/* Error / Info */}
-          {error && (
-            <div
-              style={{
-                background: "rgba(248,113,113,0.15)",
-                padding: "8px 12px",
-                color: "#fecaca",
-                borderRadius: 8,
-                marginBottom: 12,
-                fontSize: 13,
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {info && (
-            <div
-              style={{
-                background: "rgba(16,185,129,0.16)",
-                padding: "8px 12px",
-                color: "#a7f3d0",
-                borderRadius: 8,
-                marginBottom: 12,
-                fontSize: 13,
-              }}
-            >
-              {info}
-            </div>
-          )}
-
-          {loading && (
-            <div
-              style={{
-                background: "rgba(59,130,246,0.18)",
-                padding: "8px 12px",
-                color: "#bfdbfe",
-                borderRadius: 8,
-                marginBottom: 12,
-                fontSize: 13,
-              }}
-            >
-              Đang xử lý...
-            </div>
-          )}
-
-          {/* TAB 1: PASSWORD */}
-          {activeTab === "password" && (
-            <form
-              onSubmit={handlePasswordLogin}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              {/* Username / Email */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
-                <label style={{ fontSize: 13 }}>Email / Username</label>
-                <input
-                  type="text"
-                  placeholder="admin@example.com"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  style={{
-                    height: 42,
-                    padding: "0 16px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    background: "#f9fafb",
-                    color: "#111827",
-                    fontSize: 14,
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              {/* Password */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
-              >
-                <label style={{ fontSize: 13 }}>Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    height: 42,
-                    padding: "0 16px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    background: "#f9fafb",
-                    color: "#111827",
-                    fontSize: 14,
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              {/* Ghi nhớ + Quên mật khẩu */}
-              <div
-                style={{
-                  display: "flex",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 12,
+                  background:
+                    "radial-gradient(circle at 30% 20%, #38bdf8, #1d4ed8)",
+                  display: "inline-flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: 4,
-                  marginBottom: 6,
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: 18,
                 }}
               >
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    style={{ accentColor: "#22d3ee" }}
-                  />
-                  Ghi nhớ đăng nhập
-                </label>
+                ♚
+              </span>
+              <span style={{ fontSize: 20, fontWeight: 700 }}>Chess Admin</span>
+            </div>
 
-                <a
-                  href="/admin/forgot-password"
-                  style={{
-                    fontSize: 13,
-                    color: "#38bdf8",
-                    textDecoration: "none",
-                  }}
-                >
-                  Quên mật khẩu?
-                </a>
-              </div>
-
-              {/* Nút login */}
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  height: 42,
-                  marginTop: 4,
-                  borderRadius: 999,
-                  border: "none",
-                  background: "#20d1ff",
-                  color: "#0f172a",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  opacity: loading ? 0.7 : 1,
-                }}
-              >
-                Sign in
-              </button>
-            </form>
-          )}
-
-          {/* TAB 2: EMAIL + OTP */}
-          {activeTab === "email" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
+            {/* Quân cờ */}
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center mt-2">
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                style={{
+                  width: 380,
+                  height: 380,
+                  position: "relative",
+                }}
               >
-                <label style={{ fontSize: 13 }}>Email admin</label>
-                <input
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError("");
-                  }}
-                  style={{
-                    height: 42,
-                    padding: "0 16px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    background: "#f9fafb",
-                    color: "#111827",
-                    fontSize: 14,
-                    outline: "none",
-                  }}
+                <Image
+                  src="/img/QUAN_CO.png"
+                  alt="Chess King"
+                  fill
+                  style={{ objectFit: "contain" }}
+                  priority
                 />
               </div>
+            </div>
+          </div>
 
-              {otpSent && (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  <label style={{ fontSize: 13 }}>Mã đăng nhập (OTP)</label>
+          {/* Bên phải: form login + tabs (chiếm full trên mobile) */}
+          <div className="col-12 col-md-7 text-light p-4 p-md-5">
+            {/* Logo nhỏ trên mobile */}
+            <div className="d-flex d-md-none align-items-center gap-2 mb-3">
+              <span
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 12,
+                  background:
+                    "radial-gradient(circle at 30% 20%, #38bdf8, #1d4ed8)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: 18,
+                }}
+              >
+                ♚
+              </span>
+              <span style={{ fontSize: 20, fontWeight: 700 }}>Chess Admin</span>
+            </div>
+
+            {/* Badge Admin Panel */}
+            <span
+              className="d-inline-block mb-2 px-3 py-1 rounded-pill"
+              style={{
+                background: "rgba(59,130,246,0.2)",
+                fontSize: 12,
+              }}
+            >
+              Admin Panel
+            </span>
+
+            <h1 className="fw-bold mb-1" style={{ color: "#fff", fontSize: 26 }}>
+              Welcome back!
+            </h1>
+            <p className="mb-3" style={{ fontSize: 14, color: "#9ca3af" }}>
+              Chọn phương thức đăng nhập cho khu vực quản trị.
+            </p>
+
+            {/* Tabs */}
+            <div
+              className="d-flex rounded-pill p-1 mb-3"
+              style={{ background: "rgba(15,23,42,0.7)" }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("password");
+                  setError("");
+                  setInfo("");
+                }}
+                className={`btn btn-sm rounded-pill flex-fill ${
+                  activeTab === "password"
+                    ? "fw-semibold"
+                    : "fw-medium text-secondary"
+                }`}
+                style={{
+                  fontSize: 13,
+                  backgroundColor:
+                    activeTab === "password" ? "#20d1ff" : "transparent",
+                  color: activeTab === "password" ? "#0f172a" : "#9ca3af",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Đăng nhập bằng mật khẩu
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("email");
+                  setError("");
+                  setInfo("");
+                }}
+                className={`btn btn-sm rounded-pill flex-fill ${
+                  activeTab === "email"
+                    ? "fw-semibold"
+                    : "fw-medium text-secondary"
+                }`}
+                style={{
+                  fontSize: 13,
+                  backgroundColor:
+                    activeTab === "email" ? "#20d1ff" : "transparent",
+                  color: activeTab === "email" ? "#0f172a" : "#9ca3af",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Đăng nhập bằng email
+              </button>
+            </div>
+
+            {/* Error / Info / Loading */}
+            {error && (
+              <div
+                className="mb-2 p-2 rounded"
+                style={{
+                  background: "rgba(248,113,113,0.15)",
+                  color: "#fecaca",
+                  fontSize: 13,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {info && (
+              <div
+                className="mb-2 p-2 rounded"
+                style={{
+                  background: "rgba(16,185,129,0.16)",
+                  color: "#a7f3d0",
+                  fontSize: 13,
+                }}
+              >
+                {info}
+              </div>
+            )}
+
+            {loading && (
+              <div
+                className="mb-2 p-2 rounded"
+                style={{
+                  background: "rgba(59,130,246,0.18)",
+                  color: "#bfdbfe",
+                  fontSize: 13,
+                }}
+              >
+                Đang xử lý...
+              </div>
+            )}
+
+            {/* TAB 1: PASSWORD */}
+            {activeTab === "password" && (
+              <form
+                onSubmit={handlePasswordLogin}
+                className="d-flex flex-column gap-2"
+              >
+                <div className="mb-2">
+                  <label className="form-label mb-1" style={{ fontSize: 13 }}>
+                    Email / Username
+                  </label>
                   <input
                     type="text"
-                    placeholder="••••••"
-                    value={otp}
-                    onChange={(e) => {
-                      setOtp(e.target.value);
-                      setError("");
-                    }}
+                    className="form-control rounded-pill"
                     style={{
                       height: 42,
-                      padding: "0 16px",
-                      borderRadius: 999,
-                      border: "1px solid #4b5563",
-                      background: "#f9fafb",
-                      color: "#111827",
-                      fontSize: 18,
-                      letterSpacing: "0.3em",
-                      textAlign: "center",
-                      outline: "none",
+                      fontSize: 14,
+                      borderColor: "#4b5563",
+                    }}
+                    placeholder="admin@example.com"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+
+                <div className="mb-2">
+                  <label className="form-label mb-1" style={{ fontSize: 13 }}>
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    className="form-control rounded-pill"
+                    style={{
+                      height: 42,
+                      fontSize: 14,
+                      borderColor: "#4b5563",
+                    }}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+
+                <div className="d-flex align-items-center justify-content-between mt-1 mb-2">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor="rememberMe"
+                      style={{ fontSize: 13 }}
+                    >
+                      Ghi nhớ đăng nhập
+                    </label>
+                  </div>
+
+                  <a
+                    href="/admin/forgot-password"
+                    style={{
+                      fontSize: 13,
+                      color: "#38bdf8",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Quên mật khẩu?
+                  </a>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn rounded-pill mt-1"
+                  style={{
+                    height: 42,
+                    background: "#20d1ff",
+                    color: "#0f172a",
+                    fontWeight: 600,
+                    fontSize: 15,
+                    opacity: loading ? 0.7 : 1,
+                  }}
+                >
+                  Sign in
+                </button>
+              </form>
+            )}
+
+            {/* TAB 2: EMAIL + OTP */}
+            {activeTab === "email" && (
+              <div className="d-flex flex-column gap-2">
+                <div className="mb-2">
+                  <label className="form-label mb-1" style={{ fontSize: 13 }}>
+                    Email admin
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control rounded-pill"
+                    style={{
+                      height: 42,
+                      fontSize: 14,
+                      borderColor: "#4b5563",
+                    }}
+                    placeholder="admin@example.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
                     }}
                   />
                 </div>
-              )}
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={loading || !email}
-                  style={{
-                    flex: 1,
-                    height: 42,
-                    borderRadius: 999,
-                    border: "1px solid #0ea5e9",
-                    background: "transparent",
-                    color: "#7dd3fc",
-                    fontWeight: 500,
-                    fontSize: 14,
-                    cursor: loading || !email ? "not-allowed" : "pointer",
-                    opacity: loading || !email ? 0.6 : 1,
-                  }}
-                >
-                  {otpSent ? "Gửi lại mã" : "📧 Gửi mã đăng nhập"}
-                </button>
 
                 {otpSent && (
+                  <div className="mb-2">
+                    <label
+                      className="form-label mb-1"
+                      style={{ fontSize: 13 }}
+                    >
+                      Mã đăng nhập (OTP)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control rounded-pill text-center"
+                      style={{
+                        height: 42,
+                        fontSize: 18,
+                        letterSpacing: "0.3em",
+                        borderColor: "#4b5563",
+                      }}
+                      placeholder="••••••"
+                      value={otp}
+                      onChange={(e) => {
+                        setOtp(e.target.value);
+                        setError("");
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="d-flex flex-column flex-md-row gap-2">
                   <button
                     type="button"
-                    onClick={handleVerifyOtp}
-                    disabled={loading || !otp}
+                    onClick={handleSendOtp}
+                    disabled={loading || !email}
+                    className="btn rounded-pill flex-fill"
                     style={{
-                      flex: 1,
                       height: 42,
-                      borderRadius: 999,
-                      border: "none",
-                      background: "#22c55e",
-                      color: "#022c22",
-                      fontWeight: 600,
+                      border: "1px solid #0ea5e9",
+                      background: "transparent",
+                      color: "#7dd3fc",
+                      fontWeight: 500,
                       fontSize: 14,
-                      cursor: loading || !otp ? "not-allowed" : "pointer",
-                      opacity: loading || !otp ? 0.7 : 1,
+                      cursor: loading || !email ? "not-allowed" : "pointer",
+                      opacity: loading || !email ? 0.6 : 1,
                     }}
                   >
-                    ✅ Xác nhận
+                    {otpSent ? "Gửi lại mã" : "📧 Gửi mã đăng nhập"}
                   </button>
-                )}
+
+                  {otpSent && (
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={loading || !otp}
+                      className="btn rounded-pill flex-fill"
+                      style={{
+                        height: 42,
+                        border: "none",
+                        background: "#22c55e",
+                        color: "#022c22",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        cursor: loading || !otp ? "not-allowed" : "pointer",
+                        opacity: loading || !otp ? 0.7 : 1,
+                      }}
+                    >
+                      ✅ Xác nhận
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Text dưới cùng */}
-          <div
-            style={{
-              marginTop: 24,
-              fontSize: 12,
-              color: "#6b7280",
-            }}
-          >
-            <div style={{ marginBottom: 8 }}>
-              Không phải admin?{" "}
-              <a
-                href="/login"
-                style={{ color: "#38bdf8", textDecoration: "none" }}
-              >
-                Về trang đăng nhập người dùng
-              </a>
-            </div>
+            {/* Text dưới cùng */}
+            <div className="mt-4" style={{ fontSize: 12, color: "#6b7280" }}>
+              <div className="mb-2">
+                Không phải admin?{" "}
+                <a
+                  href="/login"
+                  style={{ color: "#38bdf8", textDecoration: "none" }}
+                >
+                  Về trang đăng nhập người dùng
+                </a>
+              </div>
 
-            <div>
-              <a
-                href="#"
-                style={{
-                  color: "#6b7280",
-                  textDecoration: "none",
-                  marginRight: 16,
-                }}
-              >
-                Terms of use
-              </a>
-              <a href="#" style={{ color: "#6b7280", textDecoration: "none" }}>
-                Privacy policy
-              </a>
+              <div>
+                <a
+                  href="#"
+                  style={{
+                    color: "#6b7280",
+                    textDecoration: "none",
+                    marginRight: 16,
+                  }}
+                >
+                  Terms of use
+                </a>
+                <a
+                  href="#"
+                  style={{ color: "#6b7280", textDecoration: "none" }}
+                >
+                  Privacy policy
+                </a>
+              </div>
             </div>
           </div>
         </div>

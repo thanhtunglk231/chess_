@@ -154,7 +154,7 @@ export default function AdminDashboard() {
           <Card
             title="Doanh thu hôm nay"
             value={summary.revenue24h}
-            extra="+15.3%"
+            extra="+0.0%"
             trend="up"
             icon="revenue"
             variant="green"
@@ -170,8 +170,8 @@ export default function AdminDashboard() {
 
           <Card
             title="Tài khoản bị cấm"
-            value={142}
-            extra="-23%"
+            value={0}
+            extra="0%"
             trend="down"
             variant="purple"
           />
