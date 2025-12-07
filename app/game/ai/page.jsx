@@ -105,6 +105,7 @@ export default function GameAIPage() {
   // Khởi tạo Stockfish (Worker)
   // ==========================
   const initStockfish = useCallback(() => {
+    // Chỉ chạy ở browser
     if (typeof window === "undefined") {
       useRandomAI();
       return;
@@ -171,8 +172,6 @@ export default function GameAIPage() {
     if (typeof window === "undefined") return;
     if (!window.Chess || !window.Chessboard) return;
 
-    console.log("✅ All chess scripts loaded, init game...");
-
     const newGame = new window.Chess();
     gameRef.current = newGame;
     setGame(newGame);
@@ -182,7 +181,7 @@ export default function GameAIPage() {
       position: "start",
       onDragStart: (source, piece) => {
         if (newGame.game_over()) return false;
-        if (piece.search(/^b/) !== -1) return false;
+        if (piece.search(/^b/) !== -1) return false; // Chỉ cho Trắng đi
         if (newGame.turn() !== "w") return false;
         return true;
       },
@@ -209,11 +208,13 @@ export default function GameAIPage() {
     initStockfish();
 
     return () => {
+      // Cleanup worker
       if (stockfishRef.current?.terminate) {
         stockfishRef.current.terminate();
       }
       stockfishRef.current = null;
 
+      // Cleanup board
       if (boardRef.current && typeof boardRef.current.destroy === "function") {
         try {
           boardRef.current.destroy();
@@ -222,6 +223,7 @@ export default function GameAIPage() {
         }
       }
       boardRef.current = null;
+
       gameRef.current = null;
     };
   }, [
@@ -257,8 +259,8 @@ export default function GameAIPage() {
 
     if (!currentGame || !currentBoard) return;
 
-    currentGame.undo();
-    currentGame.undo();
+    currentGame.undo(); // undo AI
+    currentGame.undo(); // undo người chơi
     currentBoard.position(currentGame.fen());
     updateStatus();
     updateHistory();
@@ -267,42 +269,33 @@ export default function GameAIPage() {
 
   return (
     <>
-      {/* CSS chessboard từ CDN → đảm bảo luôn có trên Vercel */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css"
-      />
+      {/* CSS chessboard */}
+      <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
 
-      {/* Load lần lượt: jQuery -> chess.js -> chessboard.js */}
+      {/* Load scripts tuần tự qua next/script + DOM script */}
       <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        src="/lib/jquery-3.7.0.min.js"
         strategy="afterInteractive"
         onLoad={() => {
           console.log("✅ jQuery loaded");
-        }}
-        onError={(e) => {
-          console.error("❌ Failed to load jQuery", e);
-        }}
-      />
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
-        strategy="afterInteractive"
-        onLoad={() => {
-          console.log("✅ chess.js loaded");
-        }}
-        onError={(e) => {
-          console.error("❌ Failed to load chess.js", e);
-        }}
-      />
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"
-        strategy="afterInteractive"
-        onLoad={() => {
-          console.log("✅ chessboard.js loaded - READY!");
-          setScriptsLoaded(true);
-        }}
-        onError={(e) => {
-          console.error("❌ Failed to load chessboard.js", e);
+          if (typeof document === "undefined") return;
+
+          const chessScript = document.createElement("script");
+          chessScript.src = "/lib/chess-0.10.3.min.js";
+          chessScript.onload = () => {
+            console.log("✅ chess.js loaded");
+
+            const boardScript = document.createElement("script");
+            boardScript.src = "/lib/chessboard-1.0.0.min.js";
+            boardScript.onload = () => {
+              console.log("✅ chessboard.js loaded - READY!");
+              setScriptsLoaded(true);
+            };
+
+            document.body.appendChild(boardScript);
+          };
+
+          document.body.appendChild(chessScript);
         }}
       />
 
@@ -344,6 +337,7 @@ export default function GameAIPage() {
                 {status}
               </div>
 
+              {/* Difficulty */}
               <div>
                 <label className="block text-gray-400 mb-1 text-sm">
                   Độ khó:
@@ -367,6 +361,7 @@ export default function GameAIPage() {
                 </div>
               )}
 
+              {/* Buttons */}
               <div className="flex gap-2">
                 <button
                   onClick={handleNewGame}
@@ -389,6 +384,7 @@ export default function GameAIPage() {
                 🏠 Về trang chủ
               </Link>
 
+              {/* Move History */}
               <div>
                 <h3 className="text-gray-400 font-medium mb-2">
                   Lịch sử nước đi:
