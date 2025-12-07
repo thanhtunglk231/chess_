@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link"; 
 // import các thứ khác như cũ (Link, useAuth, ...)
-
+import { useAuth } from "@/context/AuthContext"; 
 export default function LoginClient() {
   const searchParams = useSearchParams();
 
