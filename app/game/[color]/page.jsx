@@ -1,14 +1,40 @@
-// app/game/[color]/page.jsx - FIXED VERSION v3
+// app/game/[color]/page.jsx - FIXED VERSION v4
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  Suspense,
+} from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 
-export default function GameOnlinePage() {
+// ==========================
+// Wrapper để bọc Suspense
+// ==========================
+export default function GameOnlinePageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-black text-yellow-400">
+          Đang tải bàn cờ...
+        </div>
+      }
+    >
+      <GameOnlinePage />
+    </Suspense>
+  );
+}
+
+// ==========================
+// Component chính
+// ==========================
+function GameOnlinePage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -28,7 +54,7 @@ export default function GameOnlinePage() {
 
   // Game state
   const [status, setStatus] = useState("⏳ Đang kết nối...");
-  const [pgn, setPgn] = useState("");
+  the [pgn, setPgn] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,7 +62,7 @@ export default function GameOnlinePage() {
   const [showDrawOffer, setShowDrawOffer] = useState(false);
   const [drawOfferFrom, setDrawOfferFrom] = useState(null);
 
-  //  FIX: Track scripts loaded globally
+  // Track scripts loaded
   const [scriptsReady, setScriptsReady] = useState(false);
   const [boardReady, setBoardReady] = useState(false);
 
@@ -45,7 +71,7 @@ export default function GameOnlinePage() {
   const boardRef = useRef(null);
   const roomJoined = useRef(false);
 
-  //  FIX: Check if scripts already loaded (from previous visit)
+  // Kiểm tra script đã load sẵn chưa
   useEffect(() => {
     const checkScripts = () => {
       if (
@@ -61,20 +87,17 @@ export default function GameOnlinePage() {
       return false;
     };
 
-    // Check immediately
     if (checkScripts()) return;
 
-    // Also check after a short delay (in case scripts are loading)
     const timer = setTimeout(checkScripts, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  //  FIX: Cleanup khi component unmount
+  // Cleanup khi unmount
   useEffect(() => {
     return () => {
       console.log("🧹 [GamePage] Cleanup on unmount");
 
-      // Destroy chessboard
       if (boardRef.current) {
         try {
           if (typeof boardRef.current.destroy === "function") {
@@ -88,14 +111,13 @@ export default function GameOnlinePage() {
       gameRef.current = null;
       roomJoined.current = false;
 
-      // Reset socket game state
       if (resetGameState) {
         resetGameState();
       }
     };
   }, [resetGameState]);
 
-  // Early return if no room code
+  // Không có mã phòng
   if (!roomCode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -112,7 +134,7 @@ export default function GameOnlinePage() {
     );
   }
 
-  //  FIX: Join/Create room - chỉ chạy 1 lần
+  // Join / create room (chỉ chạy 1 lần)
   useEffect(() => {
     if (!socket || !isConnected) {
       console.log("⏳ Waiting for socket...");
@@ -207,7 +229,9 @@ export default function GameOnlinePage() {
       drawDeclined: () => {
         console.log("❌ Draw declined");
         setShowDrawOffer(false);
-        alert("Đối thủ từ chối đề nghị hòa");
+        if (typeof window !== "undefined") {
+          window.alert("Đối thủ từ chối đề nghị hòa");
+        }
       },
 
       error: (msg) => {
@@ -216,7 +240,6 @@ export default function GameOnlinePage() {
       },
     };
 
-    // Register all handlers
     Object.entries(handlers).forEach(([event, handler]) => {
       socket.on(event, handler);
     });
@@ -227,7 +250,7 @@ export default function GameOnlinePage() {
         socket.off(event, handler);
       });
     };
-  }, [socket, playerColor]);
+  }, [socket, playerColor, updateGameStatus]);
 
   // Update game status
   const updateGameStatus = useCallback(() => {
@@ -276,38 +299,33 @@ export default function GameOnlinePage() {
     }
   }, [socket, playerColor, gameOver]);
 
-  //  FIX: Initialize board - với nhiều checks hơn
+  // Khởi tạo bàn cờ
   useEffect(() => {
     if (!scriptsReady) {
       console.log("⏳ Waiting for scripts...");
       return;
     }
 
-    // Double check libraries exist
     if (typeof window === "undefined" || !window.Chess || !window.Chessboard) {
       console.warn("⚠️ Chess libraries not available");
       return;
     }
 
-    // Check container exists
     const container = document.getElementById("myBoard");
     if (!container) {
       console.warn("⚠️ Board container not found, waiting...");
-      // Retry after DOM update
       const timer = setTimeout(() => setBoardReady((prev) => !prev), 100);
       return () => clearTimeout(timer);
     }
 
-    //  FIX: Destroy existing board first
     if (boardRef.current) {
       console.log("🔄 Destroying existing board");
       try {
         boardRef.current.destroy();
-      } catch (e) {}
+      } catch {}
       boardRef.current = null;
     }
 
-    // Clear container
     container.innerHTML = "";
 
     console.log("♟️ Creating new chessboard...");
@@ -377,7 +395,7 @@ export default function GameOnlinePage() {
     updateGameStatus,
   ]);
 
-  // Handle script load
+  // Script loaded
   const handleScriptsLoaded = useCallback(() => {
     console.log("✅ All scripts loaded via Script component");
     setScriptsReady(true);
@@ -385,20 +403,32 @@ export default function GameOnlinePage() {
 
   // Actions
   const handleResign = () => {
-    if (window.confirm("Bạn có chắc muốn xin thua?")) {
-      socket?.emit("resign", {
-        pgn: gameRef.current?.pgn() || "",
-        fen: gameRef.current?.fen() || "",
-      });
-      setGameOver(true);
-      setStatus("🏳️ Bạn đã xin thua");
+    if (typeof window !== "undefined") {
+      const ok = window.confirm("Bạn có chắc muốn xin thua?");
+      if (!ok) return;
+    } else {
+      return;
     }
+
+    socket?.emit("resign", {
+      pgn: gameRef.current?.pgn() || "",
+      fen: gameRef.current?.fen() || "",
+    });
+    setGameOver(true);
+    setStatus("🏳️ Bạn đã xin thua");
   };
 
   const handleOfferDraw = () => {
-    if (window.confirm("Bạn muốn đề nghị hòa?")) {
-      socket?.emit("offerDraw");
-      alert("Đã gửi đề nghị hòa...");
+    if (typeof window !== "undefined") {
+      const ok = window.confirm("Bạn muốn đề nghị hòa?");
+      if (!ok) return;
+    } else {
+      return;
+    }
+
+    socket?.emit("offerDraw");
+    if (typeof window !== "undefined") {
+      window.alert("Đã gửi đề nghị hòa...");
     }
   };
 
@@ -414,14 +444,14 @@ export default function GameOnlinePage() {
 
   const handleNewGame = () => {
     if (leaveRoom) leaveRoom();
-    window.location.href = "/room";
+    router.push("/room");
   };
 
   return (
     <>
       <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
 
-      {/*  FIX: Load scripts với better error handling */}
+      {/* Load scripts */}
       {!scriptsReady && (
         <Script
           src="/lib/jquery-3.7.0.min.js"
@@ -499,7 +529,6 @@ export default function GameOnlinePage() {
             </div>
           )}
 
-          {/* Debug info - có thể xóa sau */}
           <div className="text-xs text-gray-500 text-center mb-2">
             Scripts: {scriptsReady ? "✅" : "⏳"} | Socket:{" "}
             {isConnected ? "✅" : "❌"} | Room: {roomCode}
@@ -539,9 +568,11 @@ export default function GameOnlinePage() {
                 </span>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(roomCode);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                      navigator.clipboard.writeText(roomCode);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }
                   }}
                   className="px-3 py-1 bg-amber-900/80 border border-yellow-500/80 rounded-full text-yellow-200 font-bold text-sm"
                 >

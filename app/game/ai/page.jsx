@@ -1,4 +1,4 @@
-// ai/page.jsx
+// app/game/ai/page.jsx
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -18,7 +18,9 @@ export default function GameAIPage() {
   const gameRef = useRef(null);
   const boardRef = useRef(null);
 
+  // ==========================
   // Cập nhật trạng thái
+  // ==========================
   const updateStatus = useCallback(() => {
     const currentGame = gameRef.current;
     if (!currentGame) return;
@@ -36,7 +38,9 @@ export default function GameAIPage() {
     }
   }, []);
 
+  // ==========================
   // Cập nhật lịch sử
+  // ==========================
   const updateHistory = useCallback(() => {
     const currentGame = gameRef.current;
     if (!currentGame) return;
@@ -44,7 +48,9 @@ export default function GameAIPage() {
     setHistory(h);
   }, []);
 
+  // ==========================
   // AI thực hiện nước đi
+  // ==========================
   const makeAIMove = useCallback(
     (moveString) => {
       const currentGame = gameRef.current;
@@ -73,7 +79,9 @@ export default function GameAIPage() {
     [updateStatus, updateHistory]
   );
 
+  // ==========================
   // Fallback AI ngẫu nhiên
+  // ==========================
   const useRandomAI = useCallback(() => {
     stockfishRef.current = {
       postMessage: () => {
@@ -83,7 +91,8 @@ export default function GameAIPage() {
 
           const moves = currentGame.moves({ verbose: true });
           if (moves.length > 0) {
-            const randomMove = moves[Math.floor(Math.random() * moves.length)];
+            const randomMove =
+              moves[Math.floor(Math.random() * moves.length)];
             makeAIMove(randomMove.from + randomMove.to);
           }
         }, 500);
@@ -92,24 +101,44 @@ export default function GameAIPage() {
     };
   }, [makeAIMove]);
 
-  // Khởi tạo Stockfish
+  // ==========================
+  // Khởi tạo Stockfish (Worker)
+  // ==========================
   const initStockfish = useCallback(() => {
+    // Chỉ chạy ở browser
+    if (typeof window === "undefined") {
+      useRandomAI();
+      return;
+    }
+
     try {
-      const workerCode = `importScripts('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');`;
+      if (typeof Worker === "undefined") {
+        console.warn("Worker không hỗ trợ, dùng random AI");
+        useRandomAI();
+        return;
+      }
+
+      const workerCode = `
+        importScripts('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+      `;
+
       const blob = new Blob([workerCode], { type: "application/javascript" });
       const workerUrl = URL.createObjectURL(blob);
       const sf = new Worker(workerUrl);
 
       sf.onmessage = (event) => {
         const msg = event.data;
-        if (msg.startsWith("bestmove")) {
+        if (typeof msg === "string" && msg.startsWith("bestmove")) {
           const move = msg.split(" ")[1];
           makeAIMove(move);
         }
       };
 
-      sf.onerror = () => {
-        console.warn("Stockfish failed, using random AI");
+      sf.onerror = (err) => {
+        console.warn("Stockfish failed, using random AI", err);
+        try {
+          sf.terminate();
+        } catch {}
         useRandomAI();
       };
 
@@ -122,7 +151,9 @@ export default function GameAIPage() {
     }
   }, [makeAIMove, useRandomAI]);
 
+  // ==========================
   // Yêu cầu AI suy nghĩ
+  // ==========================
   const getAIMove = useCallback(() => {
     const currentGame = gameRef.current;
     if (!currentGame || currentGame.game_over() || !stockfishRef.current)
@@ -133,9 +164,12 @@ export default function GameAIPage() {
     stockfishRef.current.postMessage("go depth " + difficulty);
   }, [difficulty]);
 
+  // ==========================
   // Khởi tạo game khi scripts loaded
+  // ==========================
   useEffect(() => {
-    if (!scriptsLoaded || typeof window === "undefined") return;
+    if (!scriptsLoaded) return;
+    if (typeof window === "undefined") return;
     if (!window.Chess || !window.Chessboard) return;
 
     const newGame = new window.Chess();
@@ -147,17 +181,19 @@ export default function GameAIPage() {
       position: "start",
       onDragStart: (source, piece) => {
         if (newGame.game_over()) return false;
-        if (piece.search(/^b/) !== -1) return false;
+        if (piece.search(/^b/) !== -1) return false; // Chỉ cho Trắng đi
         if (newGame.turn() !== "w") return false;
         return true;
       },
       onDrop: (source, target) => {
-        const move = newGame.move({ from: source, to: target, promotion: "q" });
+        const move = newGame.move({
+          from: source,
+          to: target,
+          promotion: "q",
+        });
         if (!move) return "snapback";
 
-        // Cập nhật refs
         gameRef.current = newGame;
-
         updateStatus();
         updateHistory();
         setTimeout(() => getAIMove(), 250);
@@ -172,13 +208,35 @@ export default function GameAIPage() {
     initStockfish();
 
     return () => {
+      // Cleanup worker
       if (stockfishRef.current?.terminate) {
         stockfishRef.current.terminate();
       }
-    };
-  }, [scriptsLoaded, initStockfish, getAIMove, updateStatus, updateHistory]);
+      stockfishRef.current = null;
 
+      // Cleanup board
+      if (boardRef.current && typeof boardRef.current.destroy === "function") {
+        try {
+          boardRef.current.destroy();
+        } catch (e) {
+          console.warn("Destroy board error:", e);
+        }
+      }
+      boardRef.current = null;
+
+      gameRef.current = null;
+    };
+  }, [
+    scriptsLoaded,
+    initStockfish,
+    getAIMove,
+    updateStatus,
+    updateHistory,
+  ]);
+
+  // ==========================
   // Ván mới
+  // ==========================
   const handleNewGame = () => {
     const currentGame = gameRef.current;
     const currentBoard = boardRef.current;
@@ -192,15 +250,17 @@ export default function GameAIPage() {
     setAiThinking(false);
   };
 
-  // Hoàn tác
+  // ==========================
+  // Hoàn tác 1 nước của 2 bên
+  // ==========================
   const handleUndoMove = () => {
     const currentGame = gameRef.current;
     const currentBoard = boardRef.current;
 
     if (!currentGame || !currentBoard) return;
 
-    currentGame.undo(); // Undo AI move
-    currentGame.undo(); // Undo player move
+    currentGame.undo(); // undo AI
+    currentGame.undo(); // undo người chơi
     currentBoard.position(currentGame.fen());
     updateStatus();
     updateHistory();
@@ -209,50 +269,70 @@ export default function GameAIPage() {
 
   return (
     <>
-      {/* 🔴 FIX: Load scripts tuần tự */}
+      {/* CSS chessboard */}
       <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
+
+      {/* Load scripts tuần tự qua next/script + DOM script */}
       <Script
         src="/lib/jquery-3.7.0.min.js"
         strategy="afterInteractive"
         onLoad={() => {
           console.log("✅ jQuery loaded");
+          if (typeof document === "undefined") return;
+
           const chessScript = document.createElement("script");
           chessScript.src = "/lib/chess-0.10.3.min.js";
           chessScript.onload = () => {
             console.log("✅ chess.js loaded");
+
             const boardScript = document.createElement("script");
             boardScript.src = "/lib/chessboard-1.0.0.min.js";
             boardScript.onload = () => {
               console.log("✅ chessboard.js loaded - READY!");
               setScriptsLoaded(true);
             };
+
             document.body.appendChild(boardScript);
           };
+
           document.body.appendChild(chessScript);
         }}
       />
 
-      <div className="min-h-screen p-4">
+      <div className="min-h-screen p-4 bg-slate-950 text-slate-100">
         <div className="max-w-6xl mx-auto">
           {/* Title */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold mb-1">♟ Chess vs AI</h1>
-            <p className="text-gray-400">Chơi cờ vua với Stockfish Engine</p>
+            <p className="text-gray-400">
+              Chơi cờ vua với Stockfish (hoặc AI ngẫu nhiên nếu lỗi)
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Board */}
             <div className="lg:col-span-2">
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-gray-900 rounded-lg p-6 shadow-xl">
                 <div
                   id="myBoard"
-                  style={{ width: "100%", maxWidth: "600px", margin: "0 auto" }}
-                />
+                  style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    margin: "0 auto",
+                    aspectRatio: "1",
+                  }}
+                >
+                  {!scriptsLoaded && (
+                    <div className="flex items-center justify-center h-full text-yellow-400">
+                      ⏳ Đang tải bàn cờ...
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Info Panel */}
-            <div className="bg-gray-800 rounded-lg p-6 space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6 space-y-4 shadow-xl">
               <div className="text-xl font-semibold text-blue-400">
                 {status}
               </div>
@@ -265,7 +345,7 @@ export default function GameAIPage() {
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(Number(e.target.value))}
-                  className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
                 >
                   <option value={1}>Dễ (Depth 1)</option>
                   <option value={3}>Trung bình (Depth 3)</option>
@@ -309,9 +389,11 @@ export default function GameAIPage() {
                 <h3 className="text-gray-400 font-medium mb-2">
                   Lịch sử nước đi:
                 </h3>
-                <div className="bg-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-sm">
+                <div className="bg-gray-800 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-sm">
                   {history.length === 0 ? (
-                    <span className="text-gray-500">Chưa có nước đi nào</span>
+                    <span className="text-gray-500">
+                      Chưa có nước đi nào
+                    </span>
                   ) : (
                     history.map((move, i) => (
                       <span key={i}>

@@ -231,16 +231,25 @@ export default function AdminAccountPage() {
   // ==========================
   // Xóa tài khoản
   // ==========================
+    // ==========================
+  // Xóa tài khoản
+  // ==========================
   const handleDelete = async (user) => {
     if (!isAdmin) {
       toast.error("Chỉ admin mới được xóa tài khoản.");
       return;
     }
 
-    const confirmDelete = window.confirm(
-      `Bạn chắc chắn muốn xóa tài khoản "${user.username}"?`
-    );
-    if (!confirmDelete) return;
+    // Chỉ gọi window.confirm ở client
+    if (typeof window !== "undefined") {
+      const confirmDelete = window.confirm(
+        `Bạn chắc chắn muốn xóa tài khoản "${user.username}"?`
+      );
+      if (!confirmDelete) return;
+    } else {
+      // Nếu (vì lý do gì đó) chạy trên server thì không xóa
+      return;
+    }
 
     try {
       const res = await fetch(`/api/admin/users/${user._id}`, {
@@ -260,6 +269,7 @@ export default function AdminAccountPage() {
       toast.error("Có lỗi xảy ra khi xóa tài khoản");
     }
   };
+
 
   // Khi click 1 suggestion
   const handlePickSuggestion = (username) => {
