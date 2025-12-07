@@ -217,27 +217,6 @@ export default function GameAIPage() {
   }, [scriptsLoaded, initStockfish, getAIMove, updateStatus, updateHistory]);
 
   // =====================
-  // CHẶN SCROLL KHI KÉO QUÂN TRÊN MOBILE
-  // =====================
-  useEffect(() => {
-    if (!scriptsLoaded) return;
-    if (typeof window === "undefined") return;
-
-    const el = document.getElementById("myBoard");
-    if (!el) return;
-
-    const preventScroll = (e) => {
-      e.preventDefault();
-    };
-
-    el.addEventListener("touchmove", preventScroll, { passive: false });
-
-    return () => {
-      el.removeEventListener("touchmove", preventScroll);
-    };
-  }, [scriptsLoaded]);
-
-  // =====================
   // Ván mới
   // =====================
   const handleNewGame = () => {
@@ -274,7 +253,10 @@ export default function GameAIPage() {
       <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
 
       {/* jQuery & chess.js phải load TRƯỚC */}
-      <Script src="/lib/jquery-3.7.0.min.js" strategy="beforeInteractive" />
+      <Script
+        src="/lib/jquery-3.7.0.min.js"
+        strategy="beforeInteractive"
+      />
       <Script
         src="/lib/chess-0.10.3.min.js"
         strategy="beforeInteractive"
@@ -308,7 +290,6 @@ export default function GameAIPage() {
               <div className="bg-gray-900 rounded-lg p-6 shadow-xl">
                 <div
                   id="myBoard"
-                  className="touch-none select-none"
                   style={{
                     width: "100%",
                     maxWidth: "600px",
