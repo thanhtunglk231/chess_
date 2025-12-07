@@ -174,7 +174,7 @@ function GameOnlinePage() {
   ]);
 
   // ==========================
-  // Update game status  (KHAI BÁO TRƯỚC KHI DÙNG TRONG useEffect)
+  // Update game status
   // ==========================
   const updateGameStatus = useCallback(() => {
     const g = gameRef.current;
@@ -410,6 +410,27 @@ function GameOnlinePage() {
   ]);
 
   // ==========================
+  // CHẶN SCROLL KHI KÉO QUÂN TRÊN MOBILE
+  // ==========================
+  useEffect(() => {
+    if (!scriptsReady) return;
+    if (typeof window === "undefined") return;
+
+    const el = document.getElementById("myBoard");
+    if (!el) return;
+
+    const preventScroll = (e) => {
+      e.preventDefault();
+    };
+
+    el.addEventListener("touchmove", preventScroll, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchmove", preventScroll);
+    };
+  }, [scriptsReady]);
+
+  // ==========================
   // Script loaded callback
   // ==========================
   const handleScriptsLoaded = useCallback(() => {
@@ -562,6 +583,7 @@ function GameOnlinePage() {
               <div className="p-5 border-[10px] border-amber-900 rounded-xl shadow-[0_0_25px_rgba(255,165,0,0.7)] bg-black/75 backdrop-blur">
                 <div
                   id="myBoard"
+                  className="touch-none select-none"
                   style={{
                     width: "100%",
                     maxWidth: "700px",
@@ -590,7 +612,10 @@ function GameOnlinePage() {
                 </span>
                 <button
                   onClick={() => {
-                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                    if (
+                      typeof navigator !== "undefined" &&
+                      navigator.clipboard
+                    ) {
                       navigator.clipboard.writeText(roomCode);
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
