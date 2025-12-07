@@ -13,7 +13,8 @@ import WinRateByColor from "./models/WinRateByColor.js";
 
 dotenv.config({ path: ".env.local" });
 
-const PORT = process.env.SOCKET_PORT || 3001;
+const PORT = process.env.PORT || process.env.SOCKET_PORT || 3001;
+
 const CORS_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const MONGODB_URI = process.env.MONGODB_URI;
 
