@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -29,7 +29,23 @@ function generateRoomCode(length = 6) {
   return result;
 }
 
+// Component bọc Suspense (KHÔNG dùng hook trong này)
 export default function RoomPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+          Đang tải phòng...
+        </div>
+      }
+    >
+      <RoomPageInner />
+    </Suspense>
+  );
+}
+
+// Component thật sự dùng useSearchParams và các hook khác
+function RoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
@@ -40,21 +56,21 @@ export default function RoomPage() {
 
   // Xử lý error từ URL
   useEffect(() => {
-  const errorParam = searchParams.get("error");
+    const errorParam = searchParams.get("error");
 
-  const errorMap = {
-    missingCode: "Vui lòng nhập mã bàn.",
-    invalidCode: "Mã bàn không hợp lệ hoặc phòng không tồn tại.",
-    selfPlayNotAllowed: "Bạn không thể chơi cả trắng lẫn đen bằng cùng tài khoản.",
-    roomFull: "Bàn này đã đủ 2 người chơi.",
-    roomOwnedByAnother: "Mã bàn này đã được người chơi khác tạo.",
-  };
+    const errorMap = {
+      missingCode: "Vui lòng nhập mã bàn.",
+      invalidCode: "Mã bàn không hợp lệ hoặc phòng không tồn tại.",
+      selfPlayNotAllowed:
+        "Bạn không thể chơi cả trắng lẫn đen bằng cùng tài khoản.",
+      roomFull: "Bàn này đã đủ 2 người chơi.",
+      roomOwnedByAnother: "Mã bàn này đã được người chơi khác tạo.",
+    };
 
-  if (errorParam && errorMap[errorParam]) {
-    setError(errorMap[errorParam]);
-  }
-}, [searchParams]);
-
+    if (errorParam && errorMap[errorParam]) {
+      setError(errorMap[errorParam]);
+    }
+  }, [searchParams]);
 
   // Tạo bàn mới (quân trắng)
   const handleCreateRoom = () => {
@@ -64,15 +80,14 @@ export default function RoomPage() {
 
   // Vào bàn có sẵn (quân đen)
   const handleJoinRoom = (e) => {
-  e.preventDefault();
-  const code = joinCode.trim().toUpperCase();
-  if (!code) {
-    setError("Vui lòng nhập mã bàn.");
-    return;
-  }
-  router.push(`/game/black?code=${code}`);
-};
-
+    e.preventDefault();
+    const code = joinCode.trim().toUpperCase();
+    if (!code) {
+      setError("Vui lòng nhập mã bàn.");
+      return;
+    }
+    router.push(`/game/black?code=${code}`);
+  };
 
   // Đăng xuất
   const handleLogout = async () => {
@@ -328,10 +343,7 @@ export default function RoomPage() {
                   </ul>
                 </div>
 
-                <form
-                  onSubmit={handleJoinRoom}
-                  className="space-y-3 mt-auto"
-                >
+                <form onSubmit={handleJoinRoom} className="space-y-3 mt-auto">
                   <input
                     type="text"
                     value={joinCode}
