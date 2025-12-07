@@ -6,8 +6,6 @@ import Link from "next/link";
 import Script from "next/script";
 
 export default function GameAIPage() {
-  const [game, setGame] = useState(null);
-  const [board, setBoard] = useState(null);
   const [status, setStatus] = useState("Trắng đi trước");
   const [history, setHistory] = useState([]);
   const [difficulty, setDifficulty] = useState(5);
@@ -18,9 +16,9 @@ export default function GameAIPage() {
   const gameRef = useRef(null);
   const boardRef = useRef(null);
 
-  // ==========================
+  // =====================
   // Cập nhật trạng thái
-  // ==========================
+  // =====================
   const updateStatus = useCallback(() => {
     const currentGame = gameRef.current;
     if (!currentGame) return;
@@ -38,9 +36,9 @@ export default function GameAIPage() {
     }
   }, []);
 
-  // ==========================
+  // =====================
   // Cập nhật lịch sử
-  // ==========================
+  // =====================
   const updateHistory = useCallback(() => {
     const currentGame = gameRef.current;
     if (!currentGame) return;
@@ -48,14 +46,13 @@ export default function GameAIPage() {
     setHistory(h);
   }, []);
 
-  // ==========================
-  // AI thực hiện nước đi
-  // ==========================
+  // =====================
+  // Thực hiện nước đi AI
+  // =====================
   const makeAIMove = useCallback(
     (moveString) => {
       const currentGame = gameRef.current;
       const currentBoard = boardRef.current;
-
       if (!currentGame || !currentBoard) return;
 
       const from = moveString.substring(0, 2);
@@ -79,16 +76,15 @@ export default function GameAIPage() {
     [updateStatus, updateHistory]
   );
 
-  // ==========================
-  // Fallback AI ngẫu nhiên
-  // ==========================
+  // =====================
+  // Fallback AI random
+  // =====================
   const useRandomAI = useCallback(() => {
     stockfishRef.current = {
       postMessage: () => {
         setTimeout(() => {
           const currentGame = gameRef.current;
           if (!currentGame) return;
-
           const moves = currentGame.moves({ verbose: true });
           if (moves.length > 0) {
             const randomMove =
@@ -101,11 +97,10 @@ export default function GameAIPage() {
     };
   }, [makeAIMove]);
 
-  // ==========================
-  // Khởi tạo Stockfish (Worker)
-  // ==========================
+  // =====================
+  // Khởi tạo Stockfish
+  // =====================
   const initStockfish = useCallback(() => {
-    // Chỉ chạy ở browser
     if (typeof window === "undefined") {
       useRandomAI();
       return;
@@ -121,7 +116,6 @@ export default function GameAIPage() {
       const workerCode = `
         importScripts('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
       `;
-
       const blob = new Blob([workerCode], { type: "application/javascript" });
       const workerUrl = URL.createObjectURL(blob);
       const sf = new Worker(workerUrl);
@@ -151,22 +145,21 @@ export default function GameAIPage() {
     }
   }, [makeAIMove, useRandomAI]);
 
-  // ==========================
-  // Yêu cầu AI suy nghĩ
-  // ==========================
+  // =====================
+  // Gọi AI suy nghĩ
+  // =====================
   const getAIMove = useCallback(() => {
     const currentGame = gameRef.current;
-    if (!currentGame || currentGame.game_over() || !stockfishRef.current)
-      return;
+    if (!currentGame || currentGame.game_over() || !stockfishRef.current) return;
 
     setAiThinking(true);
     stockfishRef.current.postMessage("position fen " + currentGame.fen());
     stockfishRef.current.postMessage("go depth " + difficulty);
   }, [difficulty]);
 
-  // ==========================
-  // Khởi tạo game khi scripts loaded
-  // ==========================
+  // =====================
+  // Khởi tạo game sau khi script load
+  // =====================
   useEffect(() => {
     if (!scriptsLoaded) return;
     if (typeof window === "undefined") return;
@@ -174,14 +167,13 @@ export default function GameAIPage() {
 
     const newGame = new window.Chess();
     gameRef.current = newGame;
-    setGame(newGame);
 
     const config = {
       draggable: true,
       position: "start",
       onDragStart: (source, piece) => {
         if (newGame.game_over()) return false;
-        if (piece.search(/^b/) !== -1) return false; // Chỉ cho Trắng đi
+        if (piece.search(/^b/) !== -1) return false;
         if (newGame.turn() !== "w") return false;
         return true;
       },
@@ -203,18 +195,15 @@ export default function GameAIPage() {
 
     const newBoard = window.Chessboard("myBoard", config);
     boardRef.current = newBoard;
-    setBoard(newBoard);
 
     initStockfish();
 
     return () => {
-      // Cleanup worker
       if (stockfishRef.current?.terminate) {
         stockfishRef.current.terminate();
       }
       stockfishRef.current = null;
 
-      // Cleanup board
       if (boardRef.current && typeof boardRef.current.destroy === "function") {
         try {
           boardRef.current.destroy();
@@ -223,24 +212,16 @@ export default function GameAIPage() {
         }
       }
       boardRef.current = null;
-
       gameRef.current = null;
     };
-  }, [
-    scriptsLoaded,
-    initStockfish,
-    getAIMove,
-    updateStatus,
-    updateHistory,
-  ]);
+  }, [scriptsLoaded, initStockfish, getAIMove, updateStatus, updateHistory]);
 
-  // ==========================
+  // =====================
   // Ván mới
-  // ==========================
+  // =====================
   const handleNewGame = () => {
     const currentGame = gameRef.current;
     const currentBoard = boardRef.current;
-
     if (!currentGame || !currentBoard) return;
 
     currentGame.reset();
@@ -250,17 +231,16 @@ export default function GameAIPage() {
     setAiThinking(false);
   };
 
-  // ==========================
-  // Hoàn tác 1 nước của 2 bên
-  // ==========================
+  // =====================
+  // Hoàn tác 2 nước
+  // =====================
   const handleUndoMove = () => {
     const currentGame = gameRef.current;
     const currentBoard = boardRef.current;
-
     if (!currentGame || !currentBoard) return;
 
-    currentGame.undo(); // undo AI
-    currentGame.undo(); // undo người chơi
+    currentGame.undo();
+    currentGame.undo();
     currentBoard.position(currentGame.fen());
     updateStatus();
     updateHistory();
@@ -272,36 +252,32 @@ export default function GameAIPage() {
       {/* CSS chessboard */}
       <link rel="stylesheet" href="/lib/chessboard-1.0.0.min.css" />
 
-      {/* Load scripts tuần tự qua next/script + DOM script */}
+      {/* jQuery & chess.js phải load TRƯỚC */}
       <Script
         src="/lib/jquery-3.7.0.min.js"
+        strategy="beforeInteractive"
+      />
+      <Script
+        src="/lib/chess-0.10.3.min.js"
+        strategy="beforeInteractive"
+        onLoad={() => console.log("✅ chess.js loaded")}
+      />
+
+      {/* chessboard.js load SAU, khi load xong thì bật scriptsLoaded */}
+      <Script
+        src="/lib/chessboard-1.0.0.min.js"
         strategy="afterInteractive"
         onLoad={() => {
-          console.log("✅ jQuery loaded");
-          if (typeof document === "undefined") return;
-
-          const chessScript = document.createElement("script");
-          chessScript.src = "/lib/chess-0.10.3.min.js";
-          chessScript.onload = () => {
-            console.log("✅ chess.js loaded");
-
-            const boardScript = document.createElement("script");
-            boardScript.src = "/lib/chessboard-1.0.0.min.js";
-            boardScript.onload = () => {
-              console.log("✅ chessboard.js loaded - READY!");
-              setScriptsLoaded(true);
-            };
-
-            document.body.appendChild(boardScript);
-          };
-
-          document.body.appendChild(chessScript);
+          console.log("✅ chessboard.js loaded");
+          setScriptsLoaded(true);
+        }}
+        onError={(e) => {
+          console.error("❌ Failed to load chessboard.js", e);
         }}
       />
 
       <div className="min-h-screen p-4 bg-slate-950 text-slate-100">
         <div className="max-w-6xl mx-auto">
-          {/* Title */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold mb-1">♟ Chess vs AI</h1>
             <p className="text-gray-400">
@@ -310,7 +286,6 @@ export default function GameAIPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Board */}
             <div className="lg:col-span-2">
               <div className="bg-gray-900 rounded-lg p-6 shadow-xl">
                 <div
@@ -331,13 +306,11 @@ export default function GameAIPage() {
               </div>
             </div>
 
-            {/* Info Panel */}
             <div className="bg-gray-900 rounded-lg p-6 space-y-4 shadow-xl">
               <div className="text-xl font-semibold text-blue-400">
                 {status}
               </div>
 
-              {/* Difficulty */}
               <div>
                 <label className="block text-gray-400 mb-1 text-sm">
                   Độ khó:
@@ -361,7 +334,6 @@ export default function GameAIPage() {
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex gap-2">
                 <button
                   onClick={handleNewGame}
@@ -384,7 +356,6 @@ export default function GameAIPage() {
                 🏠 Về trang chủ
               </Link>
 
-              {/* Move History */}
               <div>
                 <h3 className="text-gray-400 font-medium mb-2">
                   Lịch sử nước đi:
