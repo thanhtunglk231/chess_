@@ -188,7 +188,7 @@ export default function AdminDashboard() {
           },
           {
             label: "Tỉ lệ cấm",
-            value: `${summary.banRate || 0.12}%`,
+            value: `${summary.banRate || 0.0}%`,
             color: "text-red-400",
           },
           {
