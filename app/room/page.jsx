@@ -17,6 +17,7 @@ import {
   Play,
   BookOpen,
   Settings,
+  Heart,         // 👈 thêm icon donate
 } from "lucide-react";
 
 // Tạo mã phòng ngẫu nhiên
@@ -54,6 +55,9 @@ function RoomPageInner() {
   const [error, setError] = useState("");
   const [showMenu, setShowMenu] = useState(false);
 
+  // 👇 state để điều khiển nhấp nháy Donate
+  const [donateHighlight, setDonateHighlight] = useState(false);
+
   // Xử lý error từ URL
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -71,6 +75,15 @@ function RoomPageInner() {
       setError(errorMap[errorParam]);
     }
   }, [searchParams]);
+
+  // 👇 JS cho hiệu ứng nhấp nháy Donate
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDonateHighlight((prev) => !prev);
+    }, 700); // nhấp nháy mỗi 0.7s
+
+    return () => clearInterval(id);
+  }, []);
 
   // Tạo bàn mới (quân trắng)
   const handleCreateRoom = () => {
@@ -370,10 +383,36 @@ function RoomPageInner() {
               </div>
             </div>
 
-            {/* Additional Links */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Additional Links + Donate */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Donate card nhấp nháy */}
               <Link
-                href="/"
+                href="/donate"
+                className={`relative bg-slate-900 rounded-lg p-4 text-center transition border 
+                  ${
+                    donateHighlight
+                      ? "border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.7)]"
+                      : "border-slate-800"
+                  }`}
+              >
+                <div className="absolute -top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-black font-semibold">
+                  NEW
+                </div>
+                <Heart
+                  className={`w-5 h-5 mx-auto mb-2 ${
+                    donateHighlight ? "text-amber-400" : "text-amber-300"
+                  }`}
+                />
+                <div className="text-sm font-medium text-amber-200">
+                  Donate
+                </div>
+                <div className="text-slate-400 text-xs mt-1">
+                  Ủng hộ tác giả phát triển
+                </div>
+              </Link>
+
+              <Link
+                href="/game/ai"
                 className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center hover:bg-slate-800 transition"
               >
                 <Play className="w-5 h-5 mx-auto mb-2" />

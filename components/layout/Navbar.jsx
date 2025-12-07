@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-export default function Navbar() { // Use default export here
+export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
 
@@ -54,16 +54,23 @@ export default function Navbar() { // Use default export here
                 Đăng nhập
               </Link>
 
-              {/* Nút thêm theo yêu cầu: quay lại trang login */}
+              {/* Nút "Về trang Login" */}
               <button
                 onClick={() => router.push("/login")}
                 className="px-4 py-1.5 rounded-lg text-sm border border-white/20 text-white hover:bg-white/10 transition"
               >
                 Về trang Login
               </button>
-
             </div>
           )}
+
+          {/* Nút Donate */}
+          <Link
+            href="/donate"
+            className="px-4 py-1.5 rounded-lg text-sm border border-yellow-500 text-yellow-200 hover:bg-yellow-500/20 transition"
+          >
+            Donate
+          </Link>
         </div>
       </div>
     </nav>
