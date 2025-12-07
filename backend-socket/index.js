@@ -1,4 +1,4 @@
-// server/index.js - FIXED VERSION
+// server/index.js - RENDER-FRIENDLY VERSION
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
@@ -13,6 +13,9 @@ import WinRateByColor from "./models/WinRateByColor.js";
 
 dotenv.config({ path: ".env.local" });
 
+// ======================================================
+// CONFIG
+// ======================================================
 const PORT = process.env.PORT || process.env.SOCKET_PORT || 3001;
 
 const CORS_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -23,6 +26,7 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
+// HTTP server + Socket.io
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
@@ -38,7 +42,7 @@ const rooms = new Map();
 console.log(`
 ╔════════════════════════════════════════╗
 ║    🚀 Enhanced Chess Server           ║
-║ Port: ${PORT}                            ║
+║ Port: ${PORT}                         ║
 ╚════════════════════════════════════════╝
 `);
 
@@ -56,7 +60,7 @@ function calculateEloChange(playerElo, opponentElo, result) {
   return Math.round(K * (actualScore - expectedScore));
 }
 
-// 🔴 FIX: Kiểm tra ObjectId hợp lệ
+// Kiểm tra ObjectId hợp lệ
 function isValidObjectId(id) {
   if (!id) return false;
   if (typeof id !== "string") return false;
@@ -73,13 +77,13 @@ async function saveGameResult(
   try {
     const { white, black, code, startTime } = room;
 
-    // 🔴 FIX: Kiểm tra cả 2 player đều có userId hợp lệ
+    // Cần đủ userId
     if (!white?.userId || !black?.userId) {
       console.warn("⚠️ Cannot save game: missing player userId");
       return null;
     }
 
-    // 🔴 FIX: Kiểm tra ObjectId hợp lệ
+    // ObjectId hợp lệ
     if (!isValidObjectId(white.userId) || !isValidObjectId(black.userId)) {
       console.warn("⚠️ Cannot save game: invalid userId (guest players)");
       return null;
@@ -96,7 +100,11 @@ async function saveGameResult(
     const whiteEloBefore = whiteUser.elo;
     const blackEloBefore = blackUser.elo;
 
-    let winner, whiteResult, blackResult, whiteEloChange, blackEloChange;
+    let winner,
+      whiteResult,
+      blackResult,
+      whiteEloChange,
+      blackEloChange;
 
     if (result === "white_win") {
       winner = "white";
@@ -475,7 +483,7 @@ io.on("connection", (socket) => {
     socket.to(code).emit("newMove", move);
   });
 
-  // 🔴 FIX: Handle leaveRoom event
+  // Leave room (tự nguyện)
   socket.on("leaveRoom", ({ code }) => {
     console.log(`🚪 [leaveRoom] ${socket.id} leaving room ${code}`);
 
@@ -661,7 +669,7 @@ io.on("connection", (socket) => {
     if (!code || !rooms.has(code)) return;
     const room = rooms.get(code);
 
-    // 🔴 FIX: Kiểm tra nếu game đã ended thì không xử lý nữa
+    // Nếu game đã ended thì không xử lý nữa
     if (room.started && !room.ended) {
       room.ended = true; // Đánh dấu đã xử lý
       const winner = socket.playerColor === "white" ? "black" : "white";
@@ -687,6 +695,9 @@ io.on("connection", (socket) => {
   });
 });
 
+// ============================================
+// CLEANUP OLD ROOMS
+// ============================================
 setInterval(() => {
   const now = new Date();
   rooms.forEach((room, code) => {
@@ -696,10 +707,21 @@ setInterval(() => {
   });
 }, 60000);
 
+// ============================================
+// HTTP ROUTES (HEALTHCHECK + STATS)
+// ============================================
+
 httpServer.on("request", (req, res) => {
-  if (req.url === "/stats" && req.method === "GET") {
+  // Healthcheck root
+  if (req.method === "GET" && req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    return res.end("Chess socket server running");
+  }
+
+  // Stats endpoint
+  if (req.method === "GET" && req.url === "/stats") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(
+    return res.end(
       JSON.stringify({
         timestamp: new Date().toISOString(),
         totalRooms: rooms.size,
@@ -713,11 +735,28 @@ httpServer.on("request", (req, res) => {
       })
     );
   }
+
+  // 404 cho route khác
+  res.writeHead(404, { "Content-Type": "text/plain" });
+  res.end("Not found");
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`✅ Socket.io Server Ready on port ${PORT}`);
+// ============================================
+// START SERVER (Render cần 0.0.0.0)
+// ============================================
+
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`
+╔════════════════════════════════════════╗
+║    🚀 Enhanced Chess Server           ║
+║ Listening on 0.0.0.0:${PORT}          ║
+╚════════════════════════════════════════╝
+`);
+  console.log(`✅ Socket.io Server Ready on 0.0.0.0:${PORT}`);
 });
 
+// ============================================
+// GRACEFUL SHUTDOWN
+// ============================================
 process.on("SIGTERM", () => httpServer.close(() => process.exit(0)));
 process.on("SIGINT", () => httpServer.close(() => process.exit(0)));
