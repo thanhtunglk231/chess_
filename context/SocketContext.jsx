@@ -1,4 +1,4 @@
-// context/SocketContext.jsx - FIXED VERSION v2
+// context/SocketContext.jsx
 "use client";
 
 import {
@@ -26,24 +26,24 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     if (socketRef.current) {
-      console.log("⚠️ Socket already exists, reusing");
+      console.log("⚠️ [SocketContext] Reusing existing socket");
       setSocket(socketRef.current);
       return;
     }
 
     console.log("🔌 [SocketContext] Creating socket instance...");
 
-    const s = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001",
-      {
-        autoConnect: true,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-        transports: ["websocket", "polling"],
-      }
-    );
+    const socketUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+
+    const s = io(socketUrl, {
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      transports: ["websocket", "polling"],
+    });
 
     socketRef.current = s;
     setSocket(s);
@@ -53,8 +53,8 @@ export function SocketProvider({ children }) {
       setIsConnected(true);
     });
 
-    s.on("disconnect", () => {
-      console.log("❌ [SocketContext] Disconnected");
+    s.on("disconnect", (reason) => {
+      console.log("❌ [SocketContext] Disconnected:", reason);
       setIsConnected(false);
     });
 
@@ -68,7 +68,7 @@ export function SocketProvider({ children }) {
     });
 
     s.on("gameOverDisconnect", ({ winner, reason }) => {
-      console.log("🏆 [SocketContext] Game over:", reason);
+      console.log("🏆 [SocketContext] Game over (disconnect):", reason);
       setGameOver(true);
     });
 
@@ -136,16 +136,13 @@ export function SocketProvider({ children }) {
     [socket, isConnected]
   );
 
-  // 🔴 FIX: leaveRoom phải emit event để server biết và reset state
   const leaveRoom = useCallback(() => {
     console.log("🚪 [SocketContext] Leaving room:", roomCode);
 
-    // Emit event để server cleanup
     if (socket && roomCode) {
       socket.emit("leaveRoom", { code: roomCode });
     }
 
-    // Reset tất cả state
     setRoomCode(null);
     setPlayerColor(null);
     setGameStarted(false);
@@ -153,7 +150,6 @@ export function SocketProvider({ children }) {
     setOpponent(null);
   }, [socket, roomCode]);
 
-  // 🔴 FIX: Thêm function reset game state (không disconnect socket)
   const resetGameState = useCallback(() => {
     console.log("🔄 [SocketContext] Resetting game state");
     setRoomCode(null);
@@ -198,7 +194,7 @@ export function SocketProvider({ children }) {
   const resign = useCallback(
     (pgn = "", fen = "") => {
       if (!socket || !isConnected) return;
-      console.log("🏳️ [SocketContext] Resigning with PGN");
+      console.log("🏳️ [SocketContext] Resigning");
       socket.emit("resign", { pgn, fen });
     },
     [socket, isConnected]
@@ -216,7 +212,7 @@ export function SocketProvider({ children }) {
     joinRoom,
     sendMove,
     leaveRoom,
-    resetGameState, // 🔴 FIX: Export new function
+    resetGameState,
     onNewMove,
     offerDraw,
     acceptDraw,
