@@ -12,11 +12,12 @@ export default function Sidebar() {
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const checkScreen = () => {
       const desktop = window.innerWidth >= 768;
       setIsDesktop(desktop);
-      if (desktop) setOpen(true);        // Desktop: luôn mở
-      else if (!desktop && open === true) setOpen(false); // Mobile: ko tự mở
+      setOpen(desktop); // desktop: mở, mobile: đóng
     };
 
     checkScreen();
@@ -51,7 +52,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar - dùng position fixed + transform */}
+      {/* Sidebar */}
       <div
         className="bg-dark text-light position-fixed start-0 top-0 h-100 d-flex flex-column"
         style={{
@@ -82,7 +83,7 @@ export default function Sidebar() {
             <li key={index} className="nav-item mb-2">
               <Link
                 href={item.href}
-                onClick={() => !isDesktop && setOpen(false)} // Mobile: đóng khi chọn menu
+                onClick={() => !isDesktop && setOpen(false)}
                 className={`nav-link d-flex align-items-center text-light ${
                   pathname === item.href ? "active bg-primary" : ""
                 }`}
@@ -92,8 +93,6 @@ export default function Sidebar() {
                   borderRadius: "8px",
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => !pathname.includes(item.href) && (e.target.style.background = "#343a40")}
-                onMouseLeave={(e) => !pathname.includes(item.href) && (e.target.style.background = "transparent")}
               >
                 {item.icon}
                 <span style={{ fontSize: "14.5px", fontWeight: "500" }}>
@@ -104,7 +103,6 @@ export default function Sidebar() {
           ))}
         </ul>
 
-        {/* Footer nhỏ (tuỳ chọn) */}
         <div className="p-3 text-center text-muted small border-top border-secondary">
           © 2025 Chess System
         </div>

@@ -8,6 +8,7 @@ export default function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [admin, setAdmin] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     const fetchAdmin = async () => {
@@ -19,6 +20,19 @@ export default function Navbar() {
       } catch (err) {}
     };
     fetchAdmin();
+  }, []);
+
+  // ⬇️ ĐOẠN MỚI: đọc window.innerWidth trong useEffect, không dùng trực tiếp trong JSX
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkScreen = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+    return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
   const handleLogout = async () => {
@@ -40,13 +54,12 @@ export default function Navbar() {
         left: 0,
         right: 0,
         height: "66px",
-        zIndex: 1000,                    // nhỏ hơn sidebar (1050)
-        marginLeft: window.innerWidth >= 768 ? "260px" : "0px", // QUAN TRỌNG
+        zIndex: 1000, // nhỏ hơn sidebar (1050)
+        marginLeft: isDesktop ? "260px" : "0px", // dùng state thay vì window trực tiếp
       }}
     >
       {/* Tiêu đề */}
       <div className="d-flex align-items-center ml-[20%]" style={{ gap: 12 }}>
-
         <h2
           className="mb-0"
           style={{ fontSize: 21, fontWeight: 600, color: "#f5f5f5" }}
@@ -123,7 +136,12 @@ export default function Navbar() {
                 zIndex: 999,
               }}
             >
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #262626" }}>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #262626",
+                }}
+              >
                 <div style={{ fontWeight: 600, color: "#fff" }}>
                   {admin?.username || "Quản trị viên"}
                 </div>
