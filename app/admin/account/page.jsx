@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
+// ❌ BỎ import trực tiếp này đi
 // import { toast } from "react-hot-toast";
 
 export default function AdminAccountPage() {
@@ -26,6 +28,27 @@ export default function AdminAccountPage() {
 
   // Tìm kiếm
   const [searchTerm, setSearchTerm] = useState("");
+
+  // ==========================
+  // Dynamic import react-hot-toast (chỉ chạy trên client)
+  // ==========================
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    // chỉ import trên client (useEffect không chạy trên server)
+    import("react-hot-toast")
+      .then((mod) => {
+        if (mounted) setToast(() => mod.toast);
+      })
+      .catch((e) => {
+        console.error("Không thể load react-hot-toast:", e);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // ==========================
   // Lấy thông tin admin hiện tại
@@ -57,8 +80,9 @@ export default function AdminAccountPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Không tải được danh sách tài khoản");
-        toast.error(data.message || "Không tải được danh sách tài khoản");
+        const msg = data.message || "Không tải được danh sách tài khoản";
+        setError(msg);
+        toast?.error?.(msg);
         return;
       }
 
@@ -74,8 +98,9 @@ export default function AdminAccountPage() {
       }
     } catch (err) {
       console.error(err);
-      setError("Lỗi khi tải danh sách tài khoản");
-      toast.error("Lỗi khi tải danh sách tài khoản");
+      const msg = "Lỗi khi tải danh sách tài khoản";
+      setError(msg);
+      toast?.error?.(msg);
     } finally {
       setLoading(false);
     }
@@ -130,7 +155,7 @@ export default function AdminAccountPage() {
   // ==========================
   const handleOpenCreate = () => {
     if (!isAdmin) {
-      toast.error("Chỉ admin mới được tạo tài khoản.");
+      toast?.error?.("Chỉ admin mới được tạo tài khoản.");
       return;
     }
 
@@ -149,7 +174,7 @@ export default function AdminAccountPage() {
   // ==========================
   const handleOpenEdit = (user) => {
     if (!isAdmin) {
-      toast.error("Chỉ admin mới được sửa tài khoản.");
+      toast?.error?.("Chỉ admin mới được sửa tài khoản.");
       return;
     }
 
@@ -170,7 +195,7 @@ export default function AdminAccountPage() {
     e.preventDefault();
 
     if (!isAdmin) {
-      toast.error("Bạn không có quyền lưu thay đổi tài khoản.");
+      toast?.error?.("Bạn không có quyền lưu thay đổi tài khoản.");
       return;
     }
 
@@ -207,22 +232,23 @@ export default function AdminAccountPage() {
       if (!res.ok) {
         const msg = data.message || "Lưu tài khoản thất bại";
         setError(msg);
-        toast.error(msg);
+        toast?.error?.(msg);
         return;
       }
 
       if (editingUser) {
-        toast.success(`Cập nhật tài khoản ${form.username} thành công`);
+        toast?.success?.(`Cập nhật tài khoản ${form.username} thành công`);
       } else {
-        toast.success(`Tạo tài khoản ${form.username} thành công`);
+        toast?.success?.(`Tạo tài khoản ${form.username} thành công`);
       }
 
       await loadUsers();
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      setError("Có lỗi xảy ra khi lưu tài khoản");
-      toast.error("Có lỗi xảy ra khi lưu tài khoản");
+      const msg = "Có lỗi xảy ra khi lưu tài khoản";
+      setError(msg);
+      toast?.error?.(msg);
     } finally {
       setSaving(false);
     }
@@ -231,23 +257,18 @@ export default function AdminAccountPage() {
   // ==========================
   // Xóa tài khoản
   // ==========================
-    // ==========================
-  // Xóa tài khoản
-  // ==========================
   const handleDelete = async (user) => {
     if (!isAdmin) {
-      toast.error("Chỉ admin mới được xóa tài khoản.");
+      toast?.error?.("Chỉ admin mới được xóa tài khoản.");
       return;
     }
 
-    // Chỉ gọi window.confirm ở client
     if (typeof window !== "undefined") {
       const confirmDelete = window.confirm(
         `Bạn chắc chắn muốn xóa tài khoản "${user.username}"?`
       );
       if (!confirmDelete) return;
     } else {
-      // Nếu (vì lý do gì đó) chạy trên server thì không xóa
       return;
     }
 
@@ -258,24 +279,22 @@ export default function AdminAccountPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.message || "Xóa tài khoản thất bại");
+        toast?.error?.(data.message || "Xóa tài khoản thất bại");
         return;
       }
 
-      toast.success(`Đã xóa tài khoản ${user.username}`);
+      toast?.success?.(`Đã xóa tài khoản ${user.username}`);
       setUsers((prev) => prev.filter((u) => u._id !== user._id));
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi xóa tài khoản");
+      toast?.error?.("Có lỗi xảy ra khi xóa tài khoản");
     }
   };
-
 
   // Khi click 1 suggestion
   const handlePickSuggestion = (username) => {
     setSearchTerm(username);
   };
-
   // ==========================
   // Render
   // ==========================
