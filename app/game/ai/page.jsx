@@ -193,6 +193,11 @@ export default function GameAIPage() {
       pieceTheme: "/img/chesspieces/wikipedia/{piece}.png",
     };
 
+
+    // useEffect(()=>{
+    //   if(typeof window ==="undefined") return;
+    //     const el = 
+    // })
     const newBoard = window.Chessboard("myBoard", config);
     boardRef.current = newBoard;
 
@@ -290,6 +295,7 @@ export default function GameAIPage() {
               <div className="bg-gray-900 rounded-lg p-6 shadow-xl">
                 <div
                   id="myBoard"
+                  className="touch-none select-none"
                   style={{
                     width: "100%",
                     maxWidth: "600px",

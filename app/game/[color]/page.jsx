@@ -337,7 +337,7 @@ function GameOnlinePage() {
       try {
         boardRef.current.destroy();
       } catch {}
-      boardRef.current = null;
+        boardRef.current = null;
     }
 
     container.innerHTML = "";
@@ -476,7 +476,21 @@ function GameOnlinePage() {
     setShowDrawOffer(false);
   };
 
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
+    console.error("🚪 Event leave room, code:", roomCode);
+    try {
+      if (roomCode) {
+        await fetch("/api/rooms/leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // dùng đúng roomCode thay vì biến không tồn tại "code"
+          body: JSON.stringify({ code: roomCode }),
+        });
+      }
+    } catch (e) {
+      console.error("Lỗi leave room:", e);
+    }
+
     if (leaveRoom) leaveRoom();
     router.push("/room");
   };

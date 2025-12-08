@@ -86,21 +86,62 @@ function RoomPageInner() {
   }, []);
 
   // Tạo bàn mới (quân trắng)
-  const handleCreateRoom = () => {
-    const code = generateRoomCode();
-    router.push(`/game/white?code=${code}`);
-  };
+ const handleCreateRoom = async () => {
+  const code = generateRoomCode();
+
+  // 👇 Lấy id từ user theo nhiều key
+  const creatorId = user?._id || user?.id || user?.userId || null;
+
+  console.log("CreatorId khi tạo phòng:", creatorId);
+
+  try {
+    await fetch("/api/rooms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        creator: creatorId,
+      }),
+    });
+  } catch (err) {
+    console.error("Lỗi tạo phòng:", err);
+  }
+
+  router.push(`/game/white?code=${code}`);
+};
+
+
 
   // Vào bàn có sẵn (quân đen)
-  const handleJoinRoom = (e) => {
-    e.preventDefault();
-    const code = joinCode.trim().toUpperCase();
-    if (!code) {
-      setError("Vui lòng nhập mã bàn.");
+  const handleJoinRoom = async (e) => {
+  e.preventDefault();
+  const code = joinCode.trim().toUpperCase();
+  if (!code) {
+    setError("Vui lòng nhập mã bàn.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/rooms/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.message || "Không thể vào phòng");
       return;
     }
+
     router.push(`/game/black?code=${code}`);
-  };
+  } catch (err) {
+    console.error("Lỗi join room:", err);
+    setError("Đã có lỗi xảy ra khi vào phòng");
+  }
+};
+
 
   // Đăng xuất
   const handleLogout = async () => {
@@ -301,21 +342,8 @@ function RoomPageInner() {
               </Link>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="bg-red-950/40 border border-red-700/70 text-red-200 px-4 py-3 rounded-lg flex items-start gap-3">
-                <div className="mt-0.5 h-5 w-5 rounded-full border border-red-500 flex items-center justify-center text-xs">
-                  !
-                </div>
-                <div>
-                  <p className="font-medium text-sm mb-1">Lỗi</p>
-                  <p className="text-xs md:text-sm">{error}</p>
-                </div>
-              </div>
-            )}
-
             {/* Main Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Tạo bàn mới */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col h-full">
                 <div className="mb-4">
@@ -338,6 +366,30 @@ function RoomPageInner() {
                   <span>Tạo phòng & vào chơi</span>
                 </button>
               </div>
+           {/* Vào phòng có sẵn */}
+           {/* Chọn phòng đang mở */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col h-full">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold mb-1">Chọn phòng đang mở</h2>
+                <p className="text-slate-400 text-sm">
+                  Xem danh sách các phòng hiện đang ở trạng thái{" "}
+                  <span className="text-emerald-400">available</span> và chọn phòng để vào
+                  chơi cùng người khác.
+                </p>
+                <ul className="text-slate-500 text-xs space-y-1 mt-3">
+                  <li>• Thấy ngay các phòng công khai</li>
+                  <li>• Không cần nhập mã</li>
+                  <li>• Bấm một nút là vào</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => router.push("/room/available")}
+                className="mt-auto w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg text-sm transition"
+              >
+                <Target className="w-4 h-4" />
+                <span>Xem danh sách phòng</span>
+              </button>
+            </div>
 
               {/* Vào bàn có sẵn */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col h-full">
@@ -403,23 +455,18 @@ function RoomPageInner() {
                     donateHighlight ? "text-amber-400" : "text-amber-300"
                   }`}
                 />
-                <div className="text-sm font-medium text-amber-200">
-                  Donate
-                </div>
-                <div className="text-slate-400 text-xs mt-1">
-                  Ủng hộ tác giả phát triển
-                </div>
+                <div className="text-sm font-medium text-amber-200">Donate</div>
+                <div className="text-slate-400 text-xs mt-1">Ủng hộ tác giả phát triển</div>
               </Link>
 
+              {/* Other Links */}
               <Link
                 href="/game/ai"
                 className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center hover:bg-slate-800 transition"
               >
                 <Play className="w-5 h-5 mx-auto mb-2" />
                 <div className="text-sm font-medium">Chơi với máy</div>
-                <div className="text-slate-400 text-xs mt-1">
-                  Luyện tập offline
-                </div>
+                <div className="text-slate-400 text-xs mt-1">Luyện tập offline</div>
               </Link>
 
               <Link
@@ -428,9 +475,7 @@ function RoomPageInner() {
               >
                 <BookOpen className="w-5 h-5 mx-auto mb-2" />
                 <div className="text-sm font-medium">Hướng dẫn</div>
-                <div className="text-slate-400 text-xs mt-1">
-                  Quy tắc & chiến thuật
-                </div>
+                <div className="text-slate-400 text-xs mt-1">Quy tắc & chiến thuật</div>
               </Link>
 
               <Link
@@ -439,9 +484,7 @@ function RoomPageInner() {
               >
                 <Settings className="w-5 h-5 mx-auto mb-2" />
                 <div className="text-sm font-medium">Cài đặt</div>
-                <div className="text-slate-400 text-xs mt-1">
-                  Tuỳ chỉnh trải nghiệm
-                </div>
+                <div className="text-slate-400 text-xs mt-1">Tuỳ chỉnh trải nghiệm</div>
               </Link>
             </div>
           </div>

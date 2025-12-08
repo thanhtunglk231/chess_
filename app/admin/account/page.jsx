@@ -282,6 +282,7 @@ export default function AdminAccountPage() {
   return (
     <div
       style={{
+         marginTop: "2%", 
         padding: 24,
         color: "#E5E7EB",
         fontFamily:

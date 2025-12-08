@@ -77,7 +77,7 @@ export default function AdminDashboard() {
   const { summary, charts } = data;
 
   return (
-    <div className="dashboard space-y-8 pb-10">
+    <div className="dashboard mt-5 space-y-8 pb-10">
       {/* Banner trên cùng */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-900 via-blue-900 to-purple-900 p-8 shadow-2xl border border-cyan-800/30">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />

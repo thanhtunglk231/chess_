@@ -9,68 +9,47 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [admin, setAdmin] = useState(null);
 
-  // Lấy thông tin admin từ API
   useEffect(() => {
     const fetchAdmin = async () => {
       try {
-        const res = await fetch("/api/admin/me", {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          // Chưa đăng nhập hoặc token sai → có thể redirect về login nếu muốn
-          // router.replace("/admin/login");
-          return;
-        }
-
+        const res = await fetch("/api/admin/me", { cache: "no-store" });
+        if (!res.ok) return;
         const data = await res.json();
         setAdmin(data.admin);
-      } catch (err) {
-        console.error("Lỗi lấy admin info:", err);
-      }
+      } catch (err) {}
     };
-
     fetchAdmin();
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/admin/logout", {
-        method: "POST",
-      });
-
-      setAdmin(null);                // ✅ reset state
-      router.replace("/admin/login");
-    } catch (err) {
-      console.log("Lỗi đăng xuất:", err);
-    }
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.replace("/admin/login");
   };
 
   return (
     <header
-      className="navbar"
       style={{
         background: "rgba(10,10,10,0.95)",
         borderBottom: "1px solid #2b2b2b",
-        padding: "10px 18px",
+        padding: "12px 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        position: "sticky",
+        position: "fixed",
         top: 0,
-        zIndex: 1000,
+        left: 0,
+        right: 0,
+        height: "66px",
+        zIndex: 1000,                    // nhỏ hơn sidebar (1050)
+        marginLeft: window.innerWidth >= 768 ? "260px" : "0px", // QUAN TRỌNG
       }}
     >
-      {/* Bên trái: tiêu đề */}
-      <div className="d-flex align-items-center" style={{ gap: 10 }}>
+      {/* Tiêu đề */}
+      <div className="d-flex align-items-center ml-[20%]" style={{ gap: 12 }}>
+
         <h2
           className="mb-0"
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            color: "#f5f5f5",
-          }}
+          style={{ fontSize: 21, fontWeight: 600, color: "#f5f5f5" }}
         >
           Bảng điều khiển
         </h2>
@@ -79,7 +58,7 @@ export default function Navbar() {
             fontSize: 11,
             textTransform: "uppercase",
             letterSpacing: 1,
-            padding: "2px 8px",
+            padding: "3px 10px",
             borderRadius: 999,
             border: "1px solid #444",
             color: "#bbb",
@@ -90,124 +69,85 @@ export default function Navbar() {
         </span>
       </div>
 
-      {/* Bên phải: chào + avatar */}
-      <div
-        className="d-flex align-items-center me-2"
-        style={{ gap: 12, position: "relative" }}
-      >
-        {/* Text chào */}
-        <div className="d-none d-md-block" style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontSize: 13,
-              color: "#e5e5e5",
-              fontWeight: 500,
-            }}
-          >
-            Xin chào, {admin?.username || "Quản trị viên"}
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: "#8b8b8b",
-            }}
-          >
-            Hệ thống quản trị CHESS
-          </div>
-        </div>
-
-        {/* Avatar + dropdown */}
+      {/* Avatar + dropdown */}
+      <div style={{ position: "relative" }}>
         <div
-          className="avatar-wrapper"
-          style={{ position: "relative" }}
+          className="d-flex align-items-center"
+          style={{ gap: 12, cursor: "pointer" }}
           onClick={() => setOpen(!open)}
         >
+          <div className="d-none d-md-block text-end">
+            <div style={{ fontSize: 13.5, color: "#e5e5e5", fontWeight: 500 }}>
+              Xin chào, {admin?.username || "Quản trị viên"}
+            </div>
+            <div style={{ fontSize: 11, color: "#8b8b8b" }}>
+              Hệ thống quản trị CHESS
+            </div>
+          </div>
+
           {admin?.avatar ? (
             <img
               src={admin.avatar}
-              alt="Ảnh admin"
-              className="avatar"
+              alt="avatar"
               style={{
-                cursor: "pointer",
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
-                width: 38,
-                height: 38,
                 objectFit: "cover",
-                border: "1px solid #444",
+                border: "2px solid #444",
               }}
             />
           ) : (
-            <FaUserCircle
-              size={34}
-              color="#c5c5c5"
-              style={{ cursor: "pointer" }}
-            />
+            <FaUserCircle size={38} color="#c5c5c5" />
           )}
+        </div>
 
-          {/* Dropdown */}
-          {open && (
+        {/* Dropdown */}
+        {open && (
+          <>
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 998 }}
+              onClick={() => setOpen(false)}
+            />
             <div
               style={{
                 position: "absolute",
                 right: 0,
-                marginTop: 10,
+                top: "100%",
+                marginTop: 12,
                 background: "#151515",
                 border: "1px solid #333",
-                borderRadius: 10,
-                padding: "8px 0",
-                width: 220,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+                borderRadius: 12,
+                minWidth: 220,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.7)",
                 zIndex: 999,
               }}
             >
-              {/* Tên người dùng */}
-              <div
-                style={{
-                  padding: "10px 14px 6px",
-                  borderBottom: "1px solid #262626",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#f5f5f5",
-                    fontWeight: 500,
-                  }}
-                >
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #262626" }}>
+                <div style={{ fontWeight: 600, color: "#fff" }}>
                   {admin?.username || "Quản trị viên"}
                 </div>
-                {admin?.email && (
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#9a9a9a",
-                      marginTop: 2,
-                    }}
-                  >
-                    {admin.email}
-                  </div>
-                )}
+                <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>
+                  {admin?.email || "admin@chess.com"}
+                </div>
               </div>
-
-              {/* Nút đăng xuất */}
               <button
                 onClick={handleLogout}
                 style={{
                   width: "100%",
-                  padding: "10px 14px",
+                  padding: "12px 16px",
                   textAlign: "left",
                   background: "transparent",
-                  color: "#ff6b6b",
                   border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
+                  color: "#ff6b6b",
+                  fontWeight: 500,
                 }}
               >
                 Đăng xuất
               </button>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </header>
   );
