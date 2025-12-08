@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic";
 import { useEffect, useMemo, useState } from "react";
 
 // ❌ BỎ import trực tiếp này đi
