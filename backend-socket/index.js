@@ -4,24 +4,29 @@ import { Server } from "socket.io";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import Room from "../models/Room.js";
-import User from "../models/User.js";
-import Game from "../models/Game.js";
-import PlayerStats from "../models/PlayerStats.js";
-import EloHistory from "../models/EloHistory.js";
-import MatchHistory from "../models/MatchHistory.js";
-import WinRateByColor from "../models/WinRateByColor.js";
+import Room from "./models/Room.js";
+import User from "./models/User.js";
+import Game from "./models/Game.js";
+import PlayerStats from "./models/PlayerStats.js";
+import EloHistory from "./models/EloHistory.js";
+import MatchHistory from "./models/MatchHistory.js";
+import WinRateByColor from "./models/WinRateByColor.js";
 
-dotenv.config();
+dotenv.config(); // Render vẫn dùng biến môi trường từ dashboard, không sao
 
-const PORT = process.env.SOCKET_PORT || 3001;
+const PORT = process.env.PORT || process.env.SOCKET_PORT || 3001;
 const CORS_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const MONGODB_URI = process.env.MONGODB_URI;
 
+if (!MONGODB_URI) {
+  console.error("❌ MONGODB_URI is missing. Check Render Environment tab.");
+}
+
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log(""))
+  .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
+
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
