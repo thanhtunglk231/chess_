@@ -59,9 +59,7 @@ export default function AvailableRoomsPage() {
       }
 
       const data = await res.json();
-      //console.log("Danh sách phòng:", data);
 
-      // Lọc những phòng còn người chơi (phòng rác đã clear)
       const filtered = data.filter((room) => room.players?.length > 0);
       setRooms(filtered);
     } catch (err) {
@@ -76,9 +74,7 @@ export default function AvailableRoomsPage() {
     fetchRooms();
   }, []);
 
-  // ======================================================
-  // JOIN ROOM (PUBLIC / PRIVATE)
-  // ======================================================
+  // JOIN ROOM
   const callJoinRoomAPI = async ({ code, password }) => {
     try {
       setJoinLoading(true);
@@ -87,9 +83,7 @@ export default function AvailableRoomsPage() {
       const res = await fetch("/api/rooms/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          password ? { code, password } : { code } // chỉ gửi password nếu có
-        ),
+        body: JSON.stringify(password ? { code, password } : { code }),
       });
 
       const data = await res.json();
@@ -99,7 +93,6 @@ export default function AvailableRoomsPage() {
         return false;
       }
 
-      // Join thành công → chuyển sang game với quân đen
       router.push(`/game/black?code=${code}`);
       return true;
     } catch (err) {
@@ -115,7 +108,6 @@ export default function AvailableRoomsPage() {
     const code = room.code;
 
     if (room.isPrivate) {
-      // 🟡 Phòng có mật khẩu → mở modal yêu cầu nhập mật khẩu
       setJoinRoomCode(code);
       setJoinPassword("");
       setJoinError("");
@@ -123,7 +115,6 @@ export default function AvailableRoomsPage() {
       return;
     }
 
-    // 🟢 Phòng public → join thẳng
     setJoinRoomCode(code);
     setJoinPassword("");
     setJoinError("");
@@ -145,14 +136,11 @@ export default function AvailableRoomsPage() {
     });
 
     if (ok) {
-      // nếu join thành công thì modal sẽ tự đóng do router.push
       setShowJoinModal(false);
     }
   };
 
-  // ======================================================
-  // TẠO PHÒNG (PUBLIC / PRIVATE)
-  // ======================================================
+  // TẠO PHÒNG
   const handleOpenCreateModal = () => {
     setShowCreateModal(true);
     setCreateIsPrivate(false);
@@ -201,7 +189,6 @@ export default function AvailableRoomsPage() {
         return;
       }
 
-      // Tạo phòng thành công → đóng modal & chuyển sang game trắng
       setShowCreateModal(false);
       router.push(`/game/white?code=${code}`);
     } catch (err) {
@@ -212,9 +199,6 @@ export default function AvailableRoomsPage() {
     }
   };
 
-  // ======================================================
-  // JSX
-  // ======================================================
   return (
     <>
       {/* Modal JOIN PRIVATE ROOM */}
@@ -240,7 +224,7 @@ export default function AvailableRoomsPage() {
               <div className="text-xs text-slate-400 mb-1">
                 Bạn đang cố tham gia phòng:
               </div>
-              <div className="font-mono text-sm text-amber-300 tracking-[0.25em] mb-2">
+              <div className="font-mono text-sm text-amber-300 tracking-[0.25em] mb-2 break-all">
                 {joinRoomCode}
               </div>
 
@@ -489,10 +473,11 @@ export default function AvailableRoomsPage() {
                 {rooms.map((room) => (
                   <li
                     key={room._id}
-                    className="flex items-center justify-between gap-4 border border-slate-800 rounded-lg px-4 py-3 hover:border-sky-600/60 transition-colors"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 border border-slate-800 rounded-lg px-4 py-3 hover:border-sky-600/60 transition-colors"
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                    {/* Bên trái */}
+                    <div className="space-y-1 w-full md:w-auto md:flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs uppercase text-slate-500">
                           MÃ PHÒNG
                         </span>
@@ -506,6 +491,7 @@ export default function AvailableRoomsPage() {
                           </span>
                         )}
                       </div>
+
                       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
                         <span className="inline-flex items-center gap-1">
                           <Users className="w-3 h-3" />
@@ -539,9 +525,10 @@ export default function AvailableRoomsPage() {
                       </div>
                     </div>
 
+                    {/* Nút tham gia */}
                     <button
                       onClick={() => handleJoinRoom(room)}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium w-full md:w-auto md:self-center whitespace-nowrap"
                     >
                       {room.isPrivate && (
                         <Lock className="w-3 h-3 text-amber-200" />
