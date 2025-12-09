@@ -59,12 +59,12 @@ export default function AdminAccountPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        console.log("Lỗi load admin:", data.message);
+        //console.log("Lỗi load admin:", data.message);
         return;
       }
 
       setCurrentAdmin(data.admin);
-      console.log("Current admin:", data.admin);
+      //console.log("Current admin:", data.admin);
     } catch (err) {
       console.error("Lỗi fetch /api/admin/me:", err);
     }

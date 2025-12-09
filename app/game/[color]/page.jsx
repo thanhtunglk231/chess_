@@ -85,7 +85,7 @@ function GameOnlinePage() {
         window.Chessboard &&
         window.jQuery
       ) {
-        console.log("✅ Scripts already loaded from cache");
+        ////console.log("✅ Scripts already loaded from cache");
         setScriptsReady(true);
         return true;
       }
@@ -103,7 +103,7 @@ function GameOnlinePage() {
   // ==========================
   useEffect(() => {
     return () => {
-      console.log("🧹 [GamePage] Cleanup on unmount");
+      //console.log("🧹 [GamePage] Cleanup on unmount");
 
       if (boardRef.current) {
         try {
@@ -148,16 +148,16 @@ function GameOnlinePage() {
   // ==========================
   useEffect(() => {
     if (!socket || !isConnected) {
-      console.log("⏳ Waiting for socket...");
+      //console.log("⏳ Waiting for socket...");
       return;
     }
 
     if (roomJoined.current) {
-      console.log("⚠️ Room already joined");
+      //console.log("⚠️ Room already joined");
       return;
     }
 
-    console.log(`🔌 Joining game: ${playerColor} in ${roomCode}`);
+    //console.log(`🔌 Joining game: ${playerColor} in ${roomCode}`);
     roomJoined.current = true;
 
     if (playerColor === "white") {
@@ -231,17 +231,17 @@ function GameOnlinePage() {
   useEffect(() => {
     if (!socket) return;
 
-    console.log("📡 Setting up socket listeners");
+    //console.log("📡 Setting up socket listeners");
 
     const handlers = {
       roomCreated: ({ code }) => {
-        console.log("✅ Room created:", code);
+        //console.log("✅ Room created:", code);
         setStatus("⏳ Chờ đối thủ tham gia...");
       },
 
       // 🔔 Khi đủ 2 người, server bắn matchFound ngay
       matchFound: ({ white, black, message }) => {
-        console.log("🎯 Match found:", white, "vs", black);
+        //console.log("🎯 Match found:", white, "vs", black);
         const opp = playerColor === "white" ? black : white;
         setOpponentName(opp);
 
@@ -259,7 +259,7 @@ function GameOnlinePage() {
 
       // ⏱ Sau 5s server mới bắn startGame
       startGame: ({ white, black }) => {
-        console.log("🎮 Game started:", white, "vs", black);
+        //console.log("🎮 Game started:", white, "vs", black);
 
         // Khi game bắt đầu thì tắt countdown
         setCountdown(null);
@@ -274,7 +274,7 @@ function GameOnlinePage() {
       },
 
       newMove: (move) => {
-        console.log("📥 Move received:", move);
+        //console.log("📥 Move received:", move);
         if (!gameRef.current || !boardRef.current) {
           console.warn("⚠️ Game or board not ready");
           return;
@@ -287,13 +287,13 @@ function GameOnlinePage() {
       },
 
       gameEnded: ({ reason }) => {
-        console.log("🏆 Game ended:", reason);
+        //console.log("🏆 Game ended:", reason);
         setGameOver(true);
         setStatus(`✓ ${reason}`);
       },
 
       gameOverDisconnect: ({ reason }) => {
-        console.log("🔌 Opponent disconnected:", reason);
+        //console.log("🔌 Opponent disconnected:", reason);
         setGameOver(true);
         setStatus(
           `✅ ${reason} – Phòng đã bị hủy, đang quay lại trang chọn phòng...`
@@ -307,20 +307,20 @@ function GameOnlinePage() {
       },
 
       drawOffered: ({ from }) => {
-        console.log("📨 Draw offer from:", from);
+        //console.log("📨 Draw offer from:", from);
         setDrawOfferFrom(from);
         setShowDrawOffer(true);
       },
 
       drawAccepted: () => {
-        console.log("✅ Draw accepted");
+        //console.log("✅ Draw accepted");
         setShowDrawOffer(false);
         setGameOver(true);
         setStatus("½-½ Hòa - Cả 2 đồng ý");
       },
 
       drawDeclined: () => {
-        console.log("❌ Draw declined");
+        //console.log("❌ Draw declined");
         setShowDrawOffer(false);
         if (typeof window !== "undefined") {
           window.alert("Đối thủ từ chối đề nghị hòa");
@@ -338,7 +338,7 @@ function GameOnlinePage() {
     });
 
     return () => {
-      console.log("🔇 Removing socket listeners");
+      //console.log("🔇 Removing socket listeners");
       Object.entries(handlers).forEach(([event, handler]) => {
         socket.off(event, handler);
       });
@@ -368,7 +368,7 @@ function GameOnlinePage() {
   // ==========================
   useEffect(() => {
     if (!scriptsReady) {
-      console.log("⏳ Waiting for scripts...");
+      //console.log("⏳ Waiting for scripts...");
       return;
     }
 
@@ -385,7 +385,7 @@ function GameOnlinePage() {
     }
 
     if (boardRef.current) {
-      console.log("🔄 Destroying existing board");
+      //console.log("🔄 Destroying existing board");
       try {
         boardRef.current.destroy();
       } catch {}
@@ -394,7 +394,7 @@ function GameOnlinePage() {
 
     container.innerHTML = "";
 
-    console.log("♟️ Creating new chessboard...");
+    //console.log("♟️ Creating new chessboard...");
 
     try {
       const newGame = new window.Chess();
@@ -448,7 +448,7 @@ function GameOnlinePage() {
         newBoard.flip();
       }
 
-      console.log("✅ Chessboard created successfully");
+      //console.log("✅ Chessboard created successfully");
     } catch (error) {
       console.error("❌ Chessboard init error:", error);
     }
@@ -487,7 +487,7 @@ function GameOnlinePage() {
   // Script loaded callback
   // ==========================
   const handleScriptsLoaded = useCallback(() => {
-    console.log("✅ All scripts loaded via Script component");
+    //console.log("✅ All scripts loaded via Script component");
     setScriptsReady(true);
   }, []);
 
@@ -565,11 +565,11 @@ function GameOnlinePage() {
           src="/lib/jquery-3.7.0.min.js"
           strategy="afterInteractive"
           onLoad={() => {
-            console.log("✅ jQuery loaded");
+            //console.log("✅ jQuery loaded");
             const loadChess = document.createElement("script");
             loadChess.src = "/lib/chess-0.10.3.min.js";
             loadChess.onload = () => {
-              console.log("✅ Chess.js loaded");
+              //console.log("✅ Chess.js loaded");
               const loadBoard = document.createElement("script");
               loadBoard.src = "/lib/chessboard-1.0.0.min.js";
               loadBoard.onload = handleScriptsLoaded;

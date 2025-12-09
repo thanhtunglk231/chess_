@@ -28,11 +28,11 @@ export async function POST(req) {
     const rawOtp = String(otp).trim();
     const storedOtp = String(user.otpCode || "").trim();
 
-    console.log("ADMIN VERIFY OTP:", {
-      rawOtp,
-      storedOtp,
-      expires: user.otpExpires,
-    });
+    // console.log("ADMIN VERIFY OTP:", {
+    //   rawOtp,
+    //   storedOtp,
+    //   expires: user.otpExpires,
+    // });
 
     if (!storedOtp || storedOtp !== rawOtp) {
       return NextResponse.json(

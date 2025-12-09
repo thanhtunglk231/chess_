@@ -23,7 +23,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
+  .then(() => console.log(""))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
 // HTTP server + Socket.io
@@ -39,12 +39,12 @@ const io = new Server(httpServer, {
 
 const rooms = new Map();
 
-console.log(`
-╔════════════════════════════════════════╗
-║    🚀 Enhanced Chess Server           ║
-║ Port: ${PORT}                         ║
-╚════════════════════════════════════════╝
-`);
+// console.log(`
+// ╔════════════════════════════════════════╗
+// ║    🚀 Enhanced Chess Server           ║
+// ║ Port: ${PORT}                         ║
+// ╚════════════════════════════════════════╝
+// `);
 
 // ============================================
 // HELPER FUNCTIONS
@@ -210,7 +210,7 @@ async function saveGameResult(
       endedAt: endTime,
     });
 
-    console.log(`💾 Game saved: ${game._id}`);
+    //console.log(`💾 Game saved: ${game._id}`);
 
     // 2. Cập nhật ELO User
     whiteUser.elo += whiteEloChange;
@@ -218,13 +218,13 @@ async function saveGameResult(
     await whiteUser.save();
     await blackUser.save();
 
-    console.log(
-      `📊 ELO updated: ${white.username} (${
-        whiteEloChange > 0 ? "+" : ""
-      }${whiteEloChange}), ${black.username} (${
-        blackEloChange > 0 ? "+" : ""
-      }${blackEloChange})`
-    );
+    // console.log(
+    //   `📊 ELO updated: ${white.username} (${
+    //     whiteEloChange > 0 ? "+" : ""
+    //   }${whiteEloChange}), ${black.username} (${
+    //     blackEloChange > 0 ? "+" : ""
+    //   }${blackEloChange})`
+    // );
 
     // 3. Lưu ELO History
     await EloHistory.create({
@@ -320,7 +320,7 @@ async function saveGameResult(
       blackEloChange
     );
 
-    console.log(`✅ All stats updated for game ${game._id}`);
+    //console.log(`✅ All stats updated for game ${game._id}`);
     return game;
   } catch (error) {
     console.error("❌ Error saving game:", error);
@@ -390,14 +390,14 @@ async function updateWinRateByColor(userId, color, result, eloChange) {
 // ============================================
 
 io.on("connection", (socket) => {
-  console.log("\n🔌 CLIENT CONNECTED:", socket.id);
+  //console.log("\n🔌 CLIENT CONNECTED:", socket.id);
 
   socket.on("createGame", ({ code, username, userId }) => {
-    console.log(
-      `\n📍 [createGame] Room: ${code}, White: ${username}, UserId: ${
-        userId || "guest"
-      }`
-    );
+    // console.log(
+    //   `\n📍 [createGame] Room: ${code}, White: ${username}, UserId: ${
+    //     userId || "guest"
+    //   }`
+    // );
 
     if (rooms.has(code)) {
       const existingRoom = rooms.get(code);
@@ -436,11 +436,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinGame", ({ code, username, userId }) => {
-    console.log(
-      `\n📍 [joinGame] Room: ${code}, Black: ${username}, UserId: ${
-        userId || "guest"
-      }`
-    );
+    // console.log(
+    //   `\n📍 [joinGame] Room: ${code}, Black: ${username}, UserId: ${
+    //     userId || "guest"
+    //   }`
+    // );
 
     if (!rooms.has(code)) {
       socket.emit("error", "Phòng không tồn tại hoặc đã kết thúc");
@@ -485,7 +485,7 @@ io.on("connection", (socket) => {
 
   // Leave room (tự nguyện)
   socket.on("leaveRoom", ({ code }) => {
-    console.log(`🚪 [leaveRoom] ${socket.id} leaving room ${code}`);
+    // console.log(`🚪 [leaveRoom] ${socket.id} leaving room ${code}`);
 
     if (code && rooms.has(code)) {
       const room = rooms.get(code);
@@ -526,7 +526,7 @@ io.on("connection", (socket) => {
   socket.on("offerDraw", () => {
     const code = socket.roomCode;
     if (!code) return;
-    console.log(`🤝 Draw offered in ${code} by ${socket.playerColor}`);
+    //console.log(`🤝 Draw offered in ${code} by ${socket.playerColor}`);
     socket.to(code).emit("drawOffered", { from: socket.playerColor });
   });
 
@@ -534,7 +534,7 @@ io.on("connection", (socket) => {
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
     const room = rooms.get(code);
-    console.log(`✅ Draw accepted in ${code}`);
+    //console.log(`✅ Draw accepted in ${code}`);
     io.to(code).emit("drawAccepted");
     await saveGameResult(
       room,
@@ -549,7 +549,7 @@ io.on("connection", (socket) => {
   socket.on("declineDraw", () => {
     const code = socket.roomCode;
     if (!code) return;
-    console.log(`❌ Draw declined in ${code}`);
+    //console.log(`❌ Draw declined in ${code}`);
     socket.to(code).emit("drawDeclined");
   });
 
@@ -562,7 +562,7 @@ io.on("connection", (socket) => {
     const winner = socket.playerColor === "white" ? "black" : "white";
     const result =
       socket.playerColor === "white" ? "white_resign" : "black_resign";
-    console.log(`🏳️ ${socket.playerColor} resigned in ${code}`);
+    //console.log(`🏳️ ${socket.playerColor} resigned in ${code}`);
     io.to(code).emit("gameEnded", {
       result: winner + "_win",
       winner,
@@ -579,7 +579,7 @@ io.on("connection", (socket) => {
     if (pgn) room.pgn = pgn;
     if (fen) room.fen = fen;
     const result = winner === "white" ? "white_win" : "black_win";
-    console.log(`👑 Checkmate in ${code}, winner: ${winner}`);
+    //console.log(`👑 Checkmate in ${code}, winner: ${winner}`);
     io.to(code).emit("gameEnded", { result, winner, reason: "Chiếu hết!" });
     await saveGameResult(room, result, "checkmate", room.pgn, room.fen || "");
     setTimeout(() => rooms.delete(code), 5000);
@@ -664,7 +664,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", async () => {
-    console.log("\n❌ CLIENT DISCONNECTED:", socket.id);
+    //console.log("\n❌ CLIENT DISCONNECTED:", socket.id);
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
     const room = rooms.get(code);
@@ -746,13 +746,13 @@ httpServer.on("request", (req, res) => {
 // ============================================
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`
-╔════════════════════════════════════════╗
-║    🚀 Enhanced Chess Server           ║
-║ Listening on 0.0.0.0:${PORT}          ║
-╚════════════════════════════════════════╝
-`);
-  console.log(`✅ Socket.io Server Ready on 0.0.0.0:${PORT}`);
+//   console.log(`
+// ╔════════════════════════════════════════╗
+// ║    🚀 Enhanced Chess Server           ║
+// ║ Listening on 0.0.0.0:${PORT}          ║
+// ╚════════════════════════════════════════╝
+// `);
+  //console.log(`✅ Socket.io Server Ready on 0.0.0.0:${PORT}`);
 });
 
 // ============================================

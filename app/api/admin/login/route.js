@@ -26,12 +26,12 @@ export async function POST(req) {
       );
     }
 
-    console.log(
-      "[ADMIN LOGIN] Thử đăng nhập:",
-      user.username,
-      "role =",
-      user.role
-    );
+    // console.log(
+    //   "[ADMIN LOGIN] Thử đăng nhập:",
+    //   user.username,
+    //   "role =",
+    //   user.role
+    // );
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {

@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-console.log("🔎 MONGODB_URI in seed script:", process.env.MONGODB_URI);
+//console.log("🔎 MONGODB_URI in seed script:", process.env.MONGODB_URI);
 
 // Dùng dynamic import để đảm bảo dotenv chạy trước
 const { default: connectDB } = await import("../lib/db.js");
@@ -27,7 +27,7 @@ const RESULTS = ["win", "loss", "draw"];
 
 async function main() {
   await connectDB();
-  console.log("✅ Connected to MongoDB");
+  //console.log("✅ Connected to MongoDB");
 
   // ====== CẤU HÌNH SỐ LƯỢNG FAKE ======
   const NUM_USERS = 30; // số user muốn thêm thêm
@@ -50,7 +50,7 @@ async function main() {
       elo: 2000,
       role: "admin",
     });
-    console.log("✅ Created admin user: admin / 123456");
+    //console.log("✅ Created admin user: admin / 123456");
   }
 
   // Lấy toàn bộ username hiện có để tránh trùng
@@ -115,9 +115,9 @@ async function main() {
   let insertedUsers = [];
   if (usersToInsert.length > 0) {
     insertedUsers = await User.insertMany(usersToInsert);
-    console.log(`✅ Inserted ${insertedUsers.length} new users`);
+    //console.log(`✅ Inserted ${insertedUsers.length} new users`);
   } else {
-    console.log("ℹ Không có user mới nào để insert (đủ username rồi).");
+    //console.log("ℹ Không có user mới nào để insert (đủ username rồi).");
   }
 
   const allUsers = [admin, ...insertedUsers];
@@ -164,15 +164,15 @@ async function main() {
 
   if (matchesToInsert.length > 0) {
     await MatchHistory.insertMany(matchesToInsert);
-    console.log(`✅ Inserted ${matchesToInsert.length} match histories`);
+    //console.log(`✅ Inserted ${matchesToInsert.length} match histories`);
   }
 
-  console.log("🌟 DONE. Dashboard sẽ có dữ liệu rất đẹp.");
+  //console.log("🌟 DONE. Dashboard sẽ có dữ liệu rất đẹp.");
 }
 
 main()
   .then(() => {
-    console.log("Seed finished.");
+    //console.log("Seed finished.");
     process.exit(0);
   })
   .catch((err) => {

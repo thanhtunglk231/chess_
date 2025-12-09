@@ -49,7 +49,7 @@ export async function POST(request) {
       { _id: user._id },
       { $set: { isOnline: true } }
     );
-    console.log("🔵 LOGIN set isOnline=true:", user.username, result);
+    //console.log("🔵 LOGIN set isOnline=true:", user.username, result);
 
     return NextResponse.json(
       {

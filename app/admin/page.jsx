@@ -50,7 +50,7 @@ export default function AdminDashboard() {
       try {
         const res = await fetch("/api/admin/dashboard/summary");
         const json = await res.json();
-        console.log(json);
+        //console.log(json);
         setData(json);
       } catch (e) {
         console.error("Lỗi khi tải dashboard:", e);

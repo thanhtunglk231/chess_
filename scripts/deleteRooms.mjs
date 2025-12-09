@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-console.log("🔎 MONGODB_URI:", process.env.MONGODB_URI);
+//console.log("🔎 MONGODB_URI:", process.env.MONGODB_URI);
 
 // Dynamic import để chắc chắn dotenv chạy trước
 const { default: connectDB } = await import("../lib/db.js");
@@ -10,7 +10,7 @@ const { default: Room } = await import("../models/Room.js");
 
 async function main() {
   await connectDB();
-  console.log("✅ Connected to MongoDB");
+  //console.log("✅ Connected to MongoDB");
 
   // ============================
   // CÁC CHẾ ĐỘ XOÁ DỮ LIỆU
@@ -18,7 +18,7 @@ async function main() {
 
   // 1️⃣ XOÁ TOÀN BỘ PHÒNG (ĐANG BẬT)
   const result = await Room.deleteMany({});
-  console.log(`🗑 Đã xoá TOÀN BỘ ${result.deletedCount} phòng trong DB`);
+  //console.log(`🗑 Đã xoá TOÀN BỘ ${result.deletedCount} phòng trong DB`);
 
   // 2️⃣ Xóa các phòng không có người chơi
   // const result = await Room.deleteMany({ players: { $size: 0 } });
