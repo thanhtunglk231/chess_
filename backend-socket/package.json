@@ -7,9 +7,12 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "socket.io": "^4.7.5",
+    "mongoose": "^8.0.0",
     "dotenv": "^16.3.1",
-    "mongoose": "^8.20.2",
-    "socket.io": "^4.7.5"
+    "bcryptjs": "^2.4.3"
   }
 }
+
+
+
