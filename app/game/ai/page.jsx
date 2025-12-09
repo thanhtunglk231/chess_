@@ -265,7 +265,7 @@ export default function GameAIPage() {
       <Script
         src="/lib/chess-0.10.3.min.js"
         strategy="beforeInteractive"
-        onLoad={() => console.log("✅ chess.js loaded")}
+        onLoad={() => console.log("")}
       />
 
       {/* chessboard.js load SAU, khi load xong thì bật scriptsLoaded */}
@@ -273,7 +273,7 @@ export default function GameAIPage() {
         src="/lib/chessboard-1.0.0.min.js"
         strategy="afterInteractive"
         onLoad={() => {
-          console.log("✅ chessboard.js loaded");
+          console.log("");
           setScriptsLoaded(true);
         }}
         onError={(e) => {

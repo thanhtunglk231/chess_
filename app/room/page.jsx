@@ -92,7 +92,7 @@ function RoomPageInner() {
   // 👇 Lấy id từ user theo nhiều key
   const creatorId = user?._id || user?.id || user?.userId || null;
 
-  console.log("CreatorId khi tạo phòng:", creatorId);
+  //console.log("CreatorId khi tạo phòng:", creatorId);
 
   try {
     await fetch("/api/rooms", {

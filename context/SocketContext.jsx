@@ -26,12 +26,12 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     if (socketRef.current) {
-      console.log("⚠️ [SocketContext] Reusing existing socket");
+      //console.log("⚠️ [SocketContext] Reusing existing socket");
       setSocket(socketRef.current);
       return;
     }
 
-    console.log("🔌 [SocketContext] Creating socket instance...");
+    //console.log("🔌 [SocketContext] Creating socket instance...");
 
     const socketUrl =
       process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
@@ -49,12 +49,12 @@ export function SocketProvider({ children }) {
     setSocket(s);
 
     s.on("connect", () => {
-      console.log("✅ [SocketContext] Connected:", s.id);
+      //console.log("✅ [SocketContext] Connected:", s.id);
       setIsConnected(true);
     });
 
     s.on("disconnect", (reason) => {
-      console.log("❌ [SocketContext] Disconnected:", reason);
+      //console.log("❌ [SocketContext] Disconnected:", reason);
       setIsConnected(false);
     });
 
@@ -63,16 +63,16 @@ export function SocketProvider({ children }) {
     });
 
     s.on("startGame", ({ white, black }) => {
-      console.log("🎮 [SocketContext] Game started!", white, "vs", black);
+      //console.log("🎮 [SocketContext] Game started!", white, "vs", black);
       setGameStarted(true);
     });
 
     s.on("gameOverDisconnect", ({ winner, reason }) => {
-      console.log("🏆 [SocketContext] Game over (disconnect):", reason);
+      //console.log("🏆 [SocketContext] Game over (disconnect):", reason);
       setGameOver(true);
     });
         s.on("roomClosed", ({ reason }) => {
-      console.log("🚪 [SocketContext] Room closed:", reason);
+      //console.log("🚪 [SocketContext] Room closed:", reason);
       setGameOver(true);
       // reset nhẹ state phòng
       setRoomCode(null);
@@ -81,12 +81,12 @@ export function SocketProvider({ children }) {
     });
 
     s.on("gameEnded", ({ result, winner, reason }) => {
-      console.log("🏁 [SocketContext] Game ended:", reason);
+      //console.log("🏁 [SocketContext] Game ended:", reason);
       setGameOver(true);
     });
 
     s.on("opponentJoined", ({ username }) => {
-      console.log("👤 [SocketContext] Opponent joined:", username);
+      //console.log("👤 [SocketContext] Opponent joined:", username);
       setOpponent(username);
     });
 
@@ -95,7 +95,7 @@ export function SocketProvider({ children }) {
     });
 
     return () => {
-      console.log("🔌 [SocketContext] Cleaning up socket");
+      //console.log("🔌 [SocketContext] Cleaning up socket");
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -109,9 +109,9 @@ export function SocketProvider({ children }) {
       console.warn("⚠️ Socket not ready for createRoom");
       return;
     }
-    console.log(
-      `📤 [SocketContext] createRoom: ${code}, ${username}, hasPassword=${!!password}`
-    );
+    // console.log(
+    //   `📤 [SocketContext] createRoom: ${code}, ${username}, hasPassword=${!!password}`
+    // );
     socket.emit("createGame", { code, username, userId, password }); // 🆕
     setRoomCode(code);
     setPlayerColor("white");
@@ -127,9 +127,9 @@ const joinRoom = useCallback(
       console.warn("⚠️ Socket not ready for joinRoom");
       return;
     }
-    console.log(
-      `📤 [SocketContext] joinRoom: ${code}, ${username}, hasPassword=${!!password}`
-    );
+    // console.log(
+    //   `📤 [SocketContext] joinRoom: ${code}, ${username}, hasPassword=${!!password}`
+    // );
     socket.emit("joinGame", { code, username, userId, password }); // 🆕
     setRoomCode(code);
     setPlayerColor("black");
@@ -149,7 +149,7 @@ const joinRoom = useCallback(
   );
 
   const leaveRoom = useCallback(() => {
-    console.log("🚪 [SocketContext] Leaving room:", roomCode);
+    //console.log("🚪 [SocketContext] Leaving room:", roomCode);
 
     if (socket && roomCode) {
       socket.emit("leaveRoom", { code: roomCode });
@@ -163,7 +163,7 @@ const joinRoom = useCallback(
   }, [socket, roomCode]);
 
   const resetGameState = useCallback(() => {
-    console.log("🔄 [SocketContext] Resetting game state");
+    //console.log("🔄 [SocketContext] Resetting game state");
     setRoomCode(null);
     setPlayerColor(null);
     setGameStarted(false);
@@ -187,26 +187,26 @@ const joinRoom = useCallback(
 
   const offerDraw = useCallback(() => {
     if (!socket || !isConnected) return;
-    console.log("🤝 [SocketContext] Offering draw");
+    //console.log("🤝 [SocketContext] Offering draw");
     socket.emit("offerDraw");
   }, [socket, isConnected]);
 
   const acceptDraw = useCallback(() => {
     if (!socket || !isConnected) return;
-    console.log("✅ [SocketContext] Accepting draw");
+    //console.log("✅ [SocketContext] Accepting draw");
     socket.emit("acceptDraw");
   }, [socket, isConnected]);
 
   const declineDraw = useCallback(() => {
     if (!socket || !isConnected) return;
-    console.log("❌ [SocketContext] Declining draw");
+    //console.log("❌ [SocketContext] Declining draw");
     socket.emit("declineDraw");
   }, [socket, isConnected]);
 
   const resign = useCallback(
     (pgn = "", fen = "") => {
       if (!socket || !isConnected) return;
-      console.log("🏳️ [SocketContext] Resigning");
+      //console.log("🏳️ [SocketContext] Resigning");
       socket.emit("resign", { pgn, fen });
     },
     [socket, isConnected]

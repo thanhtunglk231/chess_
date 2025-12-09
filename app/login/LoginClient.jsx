@@ -52,7 +52,7 @@ export default function LoginClient() {
       const result = await login(formData.username, formData.password);
 
       if (result.success) {
-        console.log("✅ Login successful, redirecting...");
+        //console.log("✅ Login successful, redirecting...");
 
         await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -133,7 +133,7 @@ export default function LoginClient() {
       if (!res.ok) {
         setError(data.message || "Mã OTP không hợp lệ.");
       } else {
-        console.log("✅ OTP login successful, redirecting...");
+        //console.log("✅ OTP login successful, redirecting...");
 
         await new Promise((resolve) => setTimeout(resolve, 300));
 

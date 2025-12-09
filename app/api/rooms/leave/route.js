@@ -38,7 +38,7 @@ export async function POST(request) {
     if (room.creator?.toString() === userId.toString()) {
       await Room.deleteOne({ _id: room._id });
 
-      console.log("🗑️ Room deleted because host left:", room.code);
+      //console.log("🗑️ Room deleted because host left:", room.code);
 
       return NextResponse.json(
         { message: "Host left → Room deleted" },
@@ -55,7 +55,7 @@ export async function POST(request) {
     if (room.players.length === 0) {
       await Room.deleteOne({ _id: room._id });
 
-      console.log("🗑️ Room deleted (no players left):", room.code);
+      //console.log("🗑️ Room deleted (no players left):", room.code);
 
       return NextResponse.json(
         { message: "Room deleted because no players left" },

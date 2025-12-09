@@ -7,7 +7,7 @@ import User from "@/models/User";
 
 export async function POST() {
   try {
-    console.log("🚪 [API] Processing logout...");
+    //console.log("🚪 [API] Processing logout...");
     await connectDB();
 
     // 👉 PHẢI await cookies()
@@ -25,7 +25,7 @@ export async function POST() {
           { $set: { isOnline: false } }
         );
 
-        console.log("🔴 LOGOUT set isOnline=false:", decoded.username);
+        //console.log("🔴 LOGOUT set isOnline=false:", decoded.username);
       } catch (err) {
         console.warn("⚠ Token invalid or expired:", err.message);
       }
@@ -42,7 +42,7 @@ export async function POST() {
       path: "/",
     });
 
-    console.log("✅ [API] Logout successful, cookie cleared");
+    //console.log("✅ [API] Logout successful, cookie cleared");
 
     return NextResponse.json({ message: "Đăng xuất thành công" });
   } catch (error) {

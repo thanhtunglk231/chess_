@@ -59,7 +59,7 @@ export default function AvailableRoomsPage() {
       }
 
       const data = await res.json();
-      console.log("Danh sách phòng:", data);
+      //console.log("Danh sách phòng:", data);
 
       // Lọc những phòng còn người chơi (phòng rác đã clear)
       const filtered = data.filter((room) => room.players?.length > 0);

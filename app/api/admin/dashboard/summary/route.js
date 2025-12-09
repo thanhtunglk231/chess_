@@ -38,7 +38,7 @@ export async function GET() {
 
     const onlineNow = onlineUsers.length;
 
-    console.log("🟢 ONLINE USERS:", onlineUsers);
+    //console.log("🟢 ONLINE USERS:", onlineUsers);
 
     const revenue24h = 0;
 

@@ -34,7 +34,7 @@ export async function POST(req) {
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    console.log("ADMIN SEND OTP:", { email, otp });
+    //console.log("ADMIN SEND OTP:", { email, otp });
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
