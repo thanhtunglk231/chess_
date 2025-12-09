@@ -71,6 +71,14 @@ export function SocketProvider({ children }) {
       console.log("🏆 [SocketContext] Game over (disconnect):", reason);
       setGameOver(true);
     });
+        s.on("roomClosed", ({ reason }) => {
+      console.log("🚪 [SocketContext] Room closed:", reason);
+      setGameOver(true);
+      // reset nhẹ state phòng
+      setRoomCode(null);
+      setPlayerColor(null);
+      setOpponent(null);
+    });
 
     s.on("gameEnded", ({ result, winner, reason }) => {
       console.log("🏁 [SocketContext] Game ended:", reason);
@@ -96,34 +104,38 @@ export function SocketProvider({ children }) {
   }, []);
 
   const createRoom = useCallback(
-    (code, username, userId) => {
-      if (!socket || !isConnected) {
-        console.warn("⚠️ Socket not ready for createRoom");
-        return;
-      }
-      console.log(`📤 [SocketContext] createRoom: ${code}, ${username}`);
-      socket.emit("createGame", { code, username, userId });
-      setRoomCode(code);
-      setPlayerColor("white");
-      setGameStarted(false);
-      setGameOver(false);
-    },
-    [socket, isConnected]
-  );
+  (code, username, userId, password = null) => {
+    if (!socket || !isConnected) {
+      console.warn("⚠️ Socket not ready for createRoom");
+      return;
+    }
+    console.log(
+      `📤 [SocketContext] createRoom: ${code}, ${username}, hasPassword=${!!password}`
+    );
+    socket.emit("createGame", { code, username, userId, password }); // 🆕
+    setRoomCode(code);
+    setPlayerColor("white");
+    setGameStarted(false);
+    setGameOver(false);
+  },
+  [socket, isConnected]
+);
 
-  const joinRoom = useCallback(
-    (code, username, userId) => {
-      if (!socket || !isConnected) {
-        console.warn("⚠️ Socket not ready for joinRoom");
-        return;
-      }
-      console.log(`📤 [SocketContext] joinRoom: ${code}, ${username}`);
-      socket.emit("joinGame", { code, username, userId });
-      setRoomCode(code);
-      setPlayerColor("black");
-    },
-    [socket, isConnected]
-  );
+const joinRoom = useCallback(
+  (code, username, userId, password = null) => {
+    if (!socket || !isConnected) {
+      console.warn("⚠️ Socket not ready for joinRoom");
+      return;
+    }
+    console.log(
+      `📤 [SocketContext] joinRoom: ${code}, ${username}, hasPassword=${!!password}`
+    );
+    socket.emit("joinGame", { code, username, userId, password }); // 🆕
+    setRoomCode(code);
+    setPlayerColor("black");
+  },
+  [socket, isConnected]
+);
 
   const sendMove = useCallback(
     (move) => {

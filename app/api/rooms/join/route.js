@@ -1,4 +1,3 @@
-// app/api/rooms/join/route.js
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Room from "@/models/Room";
@@ -16,7 +15,8 @@ export async function POST(request) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 
-    const { code } = await request.json();
+    const { code, password } = await request.json();
+
     if (!code) {
       return NextResponse.json(
         { message: "Room code is required" },
@@ -27,6 +27,7 @@ export async function POST(request) {
     await connectDB();
 
     const room = await Room.findOne({ code: code.toUpperCase() });
+
     if (!room) {
       return NextResponse.json(
         { message: "Room not found" },
@@ -34,26 +35,57 @@ export async function POST(request) {
       );
     }
 
+    // 🔐 KIỂM TRA MẬT KHẨU NẾU PHÒNG PRIVATE
+    if (room.isPrivate) {
+      if (!password) {
+        return NextResponse.json(
+          { message: "Phòng này yêu cầu mật khẩu" },
+          { status: 403 }
+        );
+      }
+
+      if (room.password !== password) {
+        return NextResponse.json(
+          { message: "Mật khẩu không đúng" },
+          { status: 403 }
+        );
+      }
+    }
+
     const userId = decoded.id;
 
-    // Không cho user vào 2 lần
+    // 🚫 Không cho user join 2 lần
     const alreadyIn = room.players.some(
       (p) => p.toString() === userId.toString()
     );
+
     if (!alreadyIn) {
-  room.players.push(userId);
-}
+      // 👤 Thêm người chơi
+      room.players.push(userId);
+    }
 
-// Nếu đủ 2 người thì đang chơi
-if (room.players.length >= 2) {
-  room.status = "in-progress";
-} else if (room.players.length === 1) {
-  room.status = "available";
-}
+    // 🟢 Cập nhật trạng thái phòng
+    if (room.players.length >= 2) {
+      room.status = "in-progress";
+    } else if (room.players.length === 1) {
+      room.status = "available";
+    }
 
-await room.save();
+    await room.save();
 
-    return NextResponse.json({ room }, { status: 200 });
+    // ❗ Không trả mật khẩu về cho client
+    const safeRoom = {
+      _id: room._id,
+      code: room.code,
+      status: room.status,
+      creator: room.creator,
+      players: room.players,
+      createdAt: room.createdAt,
+      isPrivate: room.isPrivate,
+    };
+
+    return NextResponse.json({ room: safeRoom }, { status: 200 });
+
   } catch (error) {
     console.error("❌ Error joining room:", error);
     return NextResponse.json(

@@ -34,23 +34,42 @@ export async function POST(request) {
       return NextResponse.json({ message: "Room not found" }, { status: 404 });
     }
 
-    // 🔥 Trừ người rời khỏi phòng
+    // ❗❗ CASE 1: CHỦ PHÒNG RỜI → XÓA LUÔN PHÒNG
+    if (room.creator?.toString() === userId.toString()) {
+      await Room.deleteOne({ _id: room._id });
+
+      console.log("🗑️ Room deleted because host left:", room.code);
+
+      return NextResponse.json(
+        { message: "Host left → Room deleted" },
+        { status: 200 }
+      );
+    }
+
+    // ❗ CASE 2: Người chơi bình thường rời
     room.players = room.players.filter(
       (p) => p.toString() !== userId.toString()
     );
 
-    // 🔄 Cập nhật trạng thái phòng sau khi trừ người
+    // Nếu không còn ai → xóa phòng
     if (room.players.length === 0) {
-      room.status = "available"; // Hoặc deleteOne()
-    } else if (room.players.length === 1) {
-      room.status = "available"; // Một người → vẫn là available (phòng chờ)
-    } else if (room.players.length >= 2) {
-      room.status = "in-progress";
+      await Room.deleteOne({ _id: room._id });
+
+      console.log("🗑️ Room deleted (no players left):", room.code);
+
+      return NextResponse.json(
+        { message: "Room deleted because no players left" },
+        { status: 200 }
+      );
     }
+
+    // Nếu còn người → cập nhật trạng thái
+    room.status = room.players.length === 1 ? "available" : "in-progress";
 
     await room.save();
 
     return NextResponse.json({ room }, { status: 200 });
+
   } catch (error) {
     console.error("❌ Error leaving room:", error);
     return NextResponse.json(

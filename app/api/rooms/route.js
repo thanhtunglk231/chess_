@@ -7,8 +7,9 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Lấy tất cả phòng
+    // Không trả trường password
     const rooms = await Room.find()
+      .select("-password")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -22,13 +23,12 @@ export async function GET() {
   }
 }
 
-
 export async function POST(req) {
   try {
     await connectDB();
 
     const body = await req.json();
-    const { code, creator } = body;
+    const { code, creator, password } = body;
 
     if (!code) {
       return NextResponse.json(
@@ -37,12 +37,15 @@ export async function POST(req) {
       );
     }
 
-    // ⚠️ Lưu ý: creator có thể undefined nếu user._id sai
     const newRoom = await Room.create({
       code: code.toUpperCase(),
       creator: creator || null,
-      players: creator ? [creator] : [], // 👈 QUAN TRỌNG
+      players: creator ? [creator] : [],
       status: "available",
+
+      // 🔐 Lưu mật khẩu
+      password: password || null,
+      isPrivate: password ? true : false,
     });
 
     return NextResponse.json(newRoom, { status: 201 });

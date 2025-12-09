@@ -1,9 +1,10 @@
-// server/index.js - FIXED VERSION
+// server/index.js
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
+import Room from "../models/Room.js";
 import User from "../models/User.js";
 import Game from "../models/Game.js";
 import PlayerStats from "../models/PlayerStats.js";
@@ -32,19 +33,19 @@ const io = new Server(httpServer, {
   transports: ["websocket", "polling"],
 });
 
+// rooms được giữ trong RAM cho socket
 const rooms = new Map();
 
 console.log(`
 ╔════════════════════════════════════════╗
 ║    🚀 Enhanced Chess Server           ║
-║ Port: ${PORT}                            ║
+║ Port: ${PORT}                         ║
 ╚════════════════════════════════════════╝
 `);
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-
 function calculateEloChange(playerElo, opponentElo, result) {
   const K = 32;
   const expectedScore = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
@@ -55,11 +56,25 @@ function calculateEloChange(playerElo, opponentElo, result) {
   return Math.round(K * (actualScore - expectedScore));
 }
 
-// 🔴 FIX: Kiểm tra ObjectId hợp lệ
 function isValidObjectId(id) {
   if (!id) return false;
   if (typeof id !== "string") return false;
   return mongoose.Types.ObjectId.isValid(id);
+}
+
+// Xoá phòng khỏi RAM + DB (dùng cho mọi case muốn HUỶ phòng)
+async function deleteRoomEverywhere(code, reason = "") {
+  rooms.delete(code);
+  try {
+    const result = await Room.deleteOne({ code });
+    console.log(
+      `🗑 Room ${code} deleted from DB ${
+        reason ? `(${reason})` : ""
+      } (deletedCount=${result.deletedCount})`
+    );
+  } catch (err) {
+    console.error("❌ Error delete room from DB:", err);
+  }
 }
 
 async function saveGameResult(
@@ -72,13 +87,11 @@ async function saveGameResult(
   try {
     const { white, black, code, startTime } = room;
 
-    // 🔴 FIX: Kiểm tra cả 2 player đều có userId hợp lệ
     if (!white?.userId || !black?.userId) {
       console.warn("⚠️ Cannot save game: missing player userId");
       return null;
     }
 
-    // 🔴 FIX: Kiểm tra ObjectId hợp lệ
     if (!isValidObjectId(white.userId) || !isValidObjectId(black.userId)) {
       console.warn("⚠️ Cannot save game: invalid userId (guest players)");
       return null;
@@ -95,7 +108,11 @@ async function saveGameResult(
     const whiteEloBefore = whiteUser.elo;
     const blackEloBefore = blackUser.elo;
 
-    let winner, whiteResult, blackResult, whiteEloChange, blackEloChange;
+    let winner,
+      whiteResult,
+      blackResult,
+      whiteEloChange,
+      blackEloChange;
 
     if (result === "white_win") {
       winner = "white";
@@ -173,7 +190,6 @@ async function saveGameResult(
     const duration = Math.floor((endTime - startTime) / 1000);
     const totalMoves = pgn ? pgn.split(/\d+\./).length - 1 : 0;
 
-    // 1. Lưu Game
     const game = await Game.create({
       roomCode: code,
       white: {
@@ -203,7 +219,6 @@ async function saveGameResult(
 
     console.log(`💾 Game saved: ${game._id}`);
 
-    // 2. Cập nhật ELO User
     whiteUser.elo += whiteEloChange;
     blackUser.elo += blackEloChange;
     await whiteUser.save();
@@ -217,7 +232,6 @@ async function saveGameResult(
       }${blackEloChange})`
     );
 
-    // 3. Lưu ELO History
     await EloHistory.create({
       userId: white.userId,
       gameId: game._id,
@@ -242,7 +256,6 @@ async function saveGameResult(
       opponentEloBefore: whiteEloBefore,
     });
 
-    // 4. Cập nhật PlayerStats
     await updatePlayerStats(
       white.userId,
       "white",
@@ -260,7 +273,6 @@ async function saveGameResult(
       duration
     );
 
-    // 5. Lưu MatchHistory
     await MatchHistory.create({
       userId: white.userId,
       gameId: game._id,
@@ -297,7 +309,6 @@ async function saveGameResult(
       pgn: pgn || "",
     });
 
-    // 6. Cập nhật WinRateByColor
     await updateWinRateByColor(
       white.userId,
       "white",
@@ -379,25 +390,30 @@ async function updateWinRateByColor(userId, color, result, eloChange) {
 // ============================================
 // SOCKET HANDLERS
 // ============================================
-
 io.on("connection", (socket) => {
   console.log("\n🔌 CLIENT CONNECTED:", socket.id);
 
-  socket.on("createGame", ({ code, username, userId }) => {
+  // ====== TẠO PHÒNG (TRẮNG) ======
+  socket.on("createGame", ({ code, username, userId, password }) => {
     console.log(
       `\n📍 [createGame] Room: ${code}, White: ${username}, UserId: ${
         userId || "guest"
-      }`
+      }, HasPassword: ${password ? "YES" : "NO"}`
     );
 
     if (rooms.has(code)) {
       const existingRoom = rooms.get(code);
       if (!existingRoom.started || existingRoom.white?.socketId === socket.id) {
         existingRoom.white = { socketId: socket.id, username, userId };
+        existingRoom.password = password || null;
         socket.join(code);
         socket.roomCode = code;
         socket.playerColor = "white";
-        io.to(code).emit("roomCreated", { code, white: username });
+        io.to(code).emit("roomCreated", {
+          code,
+          white: username,
+          hasPassword: !!password,
+        });
         return;
       }
       socket.emit(
@@ -413,24 +429,32 @@ io.on("connection", (socket) => {
       black: null,
       fen: "start",
       started: false,
+      ended: false,
       startTime: null,
       createdAt: new Date(),
       moves: [],
       pgn: "",
+      password: password || null,
     };
 
     rooms.set(code, newRoom);
     socket.join(code);
     socket.roomCode = code;
     socket.playerColor = "white";
-    io.to(code).emit("roomCreated", { code, white: username });
+
+    io.to(code).emit("roomCreated", {
+      code,
+      white: username,
+      hasPassword: !!password,
+    });
   });
 
-  socket.on("joinGame", ({ code, username, userId }) => {
+  // ====== ĐEN JOIN PHÒNG ======
+  socket.on("joinGame", ({ code, username, userId, password }) => {
     console.log(
       `\n📍 [joinGame] Room: ${code}, Black: ${username}, UserId: ${
         userId || "guest"
-      }`
+      }, PasswordInput: ${password ? "***" : "(none)"}`
     );
 
     if (!rooms.has(code)) {
@@ -439,6 +463,18 @@ io.on("connection", (socket) => {
     }
 
     const room = rooms.get(code);
+
+    // Phòng có mật khẩu → bắt buộc nhập đúng
+    if (room.password) {
+      if (!password) {
+        socket.emit("error", "Phòng này có mật khẩu. Vui lòng nhập mật khẩu.");
+        return;
+      }
+      if (password !== room.password) {
+        socket.emit("error", "Mật khẩu phòng không đúng.");
+        return;
+      }
+    }
 
     if (room.white?.userId && room.white.userId === userId) {
       socket.emit("error", "Bạn không thể chơi với chính mình.");
@@ -451,20 +487,45 @@ io.on("connection", (socket) => {
     }
 
     room.black = { socketId: socket.id, username, userId };
-    room.started = true;
-    room.startTime = new Date();
 
     socket.join(code);
     socket.roomCode = code;
     socket.playerColor = "black";
 
-    io.to(code).emit("startGame", {
+    // Thông báo đã tìm thấy đối thủ (optional)
+    io.to(code).emit("matchFound", {
       white: room.white.username,
       black: username,
-      message: "🎮 Trò chơi bắt đầu!",
+      message: "Đối thủ đã sẵn sàng, ván đấu sẽ bắt đầu sau 5 giây...",
     });
+
+    // ⏱ BẮT ĐẦU GAME SAU 5 GIÂY
+    setTimeout(() => {
+      // Có thể trong 5s phòng đã bị xoá / ai đó quit
+      if (!rooms.has(code)) return;
+      const currentRoom = rooms.get(code);
+      if (!currentRoom.white || !currentRoom.black) {
+        console.log(
+          `⚠️ Room ${code} cannot start: missing player after 5s countdown`
+        );
+        return;
+      }
+      if (currentRoom.started) return;
+
+      currentRoom.started = true;
+      currentRoom.startTime = new Date();
+
+      io.to(code).emit("startGame", {
+        white: currentRoom.white.username,
+        black: currentRoom.black.username,
+        message: "🎮 Trò chơi bắt đầu!",
+      });
+
+      console.log(`✅ Game started in room ${code}`);
+    }, 5000);
   });
 
+  // ====== NƯỚC ĐI ======
   socket.on("move", (move) => {
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
@@ -474,46 +535,63 @@ io.on("connection", (socket) => {
     socket.to(code).emit("newMove", move);
   });
 
-  // 🔴 FIX: Handle leaveRoom event
-  socket.on("leaveRoom", ({ code }) => {
+  // ====== RỜI PHÒNG (CLICK NÚT "RỜI PHÒNG") ======
+  socket.on("leaveRoom", async ({ code }) => {
     console.log(`🚪 [leaveRoom] ${socket.id} leaving room ${code}`);
 
-    if (code && rooms.has(code)) {
-      const room = rooms.get(code);
+    if (!code || !rooms.has(code)) return;
 
-      // Nếu game đã bắt đầu, xử lý như disconnect
-      if (room.started && !room.ended) {
-        const winner = socket.playerColor === "white" ? "black" : "white";
-        const result =
-          socket.playerColor === "white"
-            ? "white_disconnect"
-            : "black_disconnect";
+    const room = rooms.get(code);
+    const isWhite = room.white?.socketId === socket.id;
+    const isBlack = room.black?.socketId === socket.id;
 
-        socket.to(code).emit("gameOverDisconnect", {
-          winner,
-          reason: `${
-            socket.playerColor === "white" ? "Trắng" : "Đen"
-          } đã rời phòng`,
+    // ----- GAME CHƯA BẮT ĐẦU -----
+    if (!room.started) {
+      if (isWhite) {
+        // Trắng rời → huỷ phòng hoàn toàn
+        socket.to(code).emit("roomClosed", {
+          reason: "Chủ phòng đã rời đi, phòng đã bị hủy.",
         });
-
-        room.ended = true;
-        saveGameResult(room, result, "disconnect", room.pgn, room.fen || "");
+        await deleteRoomEverywhere(code, "white leave before start");
+      } else if (isBlack) {
+        // Đen rời → chỉ xoá slot đen
+        room.black = null;
+        console.log(`⚠️ Black left room ${code} before start (room still alive)`);
       }
-
       socket.leave(code);
+      socket.roomCode = null;
+      socket.playerColor = null;
+      return;
     }
 
-    // Reset socket state
+    // ----- GAME ĐANG DIỄN RA -----
+    if (room.started && !room.ended) {
+      room.ended = true;
+      const winner = isWhite ? "black" : "white";
+      const result = isWhite ? "white_disconnect" : "black_disconnect";
+
+      socket.to(code).emit("gameOverDisconnect", {
+        winner,
+        reason: `${isWhite ? "Trắng" : "Đen"} đã rời phòng`,
+      });
+
+      await saveGameResult(room, result, "disconnect", room.pgn, room.fen || "");
+      await deleteRoomEverywhere(code, "leaveRoom during game");
+    }
+
+    socket.leave(code);
     socket.roomCode = null;
     socket.playerColor = null;
   });
 
+  // ====== CẬP NHẬT PGN ======
   socket.on("updatePgn", (pgn) => {
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
     rooms.get(code).pgn = pgn;
   });
 
+  // ====== ĐỀ NGHỊ HÒA ======
   socket.on("offerDraw", () => {
     const code = socket.roomCode;
     if (!code) return;
@@ -527,14 +605,8 @@ io.on("connection", (socket) => {
     const room = rooms.get(code);
     console.log(`✅ Draw accepted in ${code}`);
     io.to(code).emit("drawAccepted");
-    await saveGameResult(
-      room,
-      "draw",
-      "draw_agreement",
-      room.pgn,
-      room.fen || ""
-    );
-    setTimeout(() => rooms.delete(code), 5000);
+    await saveGameResult(room, "draw", "draw_agreement", room.pgn, room.fen || "");
+    await deleteRoomEverywhere(code, "draw accepted");
   });
 
   socket.on("declineDraw", () => {
@@ -544,25 +616,32 @@ io.on("connection", (socket) => {
     socket.to(code).emit("drawDeclined");
   });
 
+  // ====== XIN THUA ======
   socket.on("resign", async ({ pgn, fen } = {}) => {
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
     const room = rooms.get(code);
     if (pgn) room.pgn = pgn;
     if (fen) room.fen = fen;
+
     const winner = socket.playerColor === "white" ? "black" : "white";
     const result =
       socket.playerColor === "white" ? "white_resign" : "black_resign";
+
     console.log(`🏳️ ${socket.playerColor} resigned in ${code}`);
     io.to(code).emit("gameEnded", {
       result: winner + "_win",
       winner,
-      reason: `${socket.playerColor === "white" ? "Trắng" : "Đen"} đã xin thua`,
+      reason: `${
+        socket.playerColor === "white" ? "Trắng" : "Đen"
+      } đã xin thua`,
     });
+
     await saveGameResult(room, result, "resign", room.pgn, room.fen || "");
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "resign");
   });
 
+  // ====== CÁC CASE KẾT THÚC KHÁC ======
   socket.on("checkmate", async ({ winner, pgn, fen }) => {
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
@@ -573,7 +652,7 @@ io.on("connection", (socket) => {
     console.log(`👑 Checkmate in ${code}, winner: ${winner}`);
     io.to(code).emit("gameEnded", { result, winner, reason: "Chiếu hết!" });
     await saveGameResult(room, result, "checkmate", room.pgn, room.fen || "");
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "checkmate");
   });
 
   socket.on("stalemate", async ({ pgn, fen }) => {
@@ -588,7 +667,7 @@ io.on("connection", (socket) => {
       reason: "Hòa - Bí quân",
     });
     await saveGameResult(room, "draw", "stalemate", room.pgn, room.fen || "");
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "stalemate");
   });
 
   socket.on("drawByRepetition", async ({ pgn, fen }) => {
@@ -609,7 +688,7 @@ io.on("connection", (socket) => {
       room.pgn,
       room.fen || ""
     );
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "draw by repetition");
   });
 
   socket.on("drawByMaterial", async ({ pgn, fen }) => {
@@ -630,7 +709,7 @@ io.on("connection", (socket) => {
       room.pgn,
       room.fen || ""
     );
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "draw by material");
   });
 
   socket.on("drawGeneric", async ({ pgn, fen }) => {
@@ -651,29 +730,46 @@ io.on("connection", (socket) => {
       room.pgn,
       room.fen || ""
     );
-    setTimeout(() => rooms.delete(code), 5000);
+    await deleteRoomEverywhere(code, "generic draw");
   });
 
+  // ====== SOCKET DISCONNECT (F5 / mất mạng) ======
   socket.on("disconnect", async () => {
-    console.log("\n❌ CLIENT DISCONNECTED:", socket.id);
+    console.log("❌ CLIENT DISCONNECTED:", socket.id);
+
     const code = socket.roomCode;
     if (!code || !rooms.has(code)) return;
-    const room = rooms.get(code);
 
-    // 🔴 FIX: Kiểm tra nếu game đã ended thì không xử lý nữa
+    const room = rooms.get(code);
+    const isWhite = room.white?.socketId === socket.id;
+    const isBlack = room.black?.socketId === socket.id;
+
+    // ----- GAME CHƯA BẮT ĐẦU -----
+    if (!room.started) {
+      if (isWhite) {
+        socket.to(code).emit("roomClosed", {
+          reason: "Chủ phòng đã rời đi, phòng đã bị hủy.",
+        });
+        await deleteRoomEverywhere(code, "white disconnected before start");
+      } else if (isBlack) {
+        room.black = null;
+        console.log(`⚠️ Guest disconnected before start in room ${code}`);
+      }
+      return;
+    }
+
+    // ----- GAME ĐANG DIỄN RA -----
     if (room.started && !room.ended) {
-      room.ended = true; // Đánh dấu đã xử lý
-      const winner = socket.playerColor === "white" ? "black" : "white";
-      const result =
-        socket.playerColor === "white"
-          ? "white_disconnect"
-          : "black_disconnect";
+      room.ended = true;
+
+      const winner = isWhite ? "black" : "white";
+      const result = isWhite ? "white_disconnect" : "black_disconnect";
+
       socket.to(code).emit("gameOverDisconnect", {
         winner,
-        reason: `${
-          socket.playerColor === "white" ? "Trắng" : "Đen"
-        } đã ngắt kết nối`,
+        reason: `${isWhite ? "Trắng" : "Đen"} đã ngắt kết nối`,
       });
+
       await saveGameResult(
         room,
         result,
@@ -681,20 +777,24 @@ io.on("connection", (socket) => {
         room.pgn,
         room.fen || ""
       );
+
+      await deleteRoomEverywhere(code, "disconnect during game");
     }
-    setTimeout(() => rooms.delete(code), 10000);
   });
 });
 
+// Cron nhỏ dọn rác phòng quá 2 tiếng (chỉ RAM)
 setInterval(() => {
   const now = new Date();
   rooms.forEach((room, code) => {
     if (now - room.createdAt > 2 * 60 * 60 * 1000) {
       rooms.delete(code);
+      console.log(`🧹 Room ${code} auto-removed from memory (timeout)`);
     }
   });
 }, 60000);
 
+// Endpoint debug
 httpServer.on("request", (req, res) => {
   if (req.url === "/stats" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
