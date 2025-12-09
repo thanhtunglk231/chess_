@@ -226,90 +226,109 @@ function GameOnlinePage() {
   // Socket listeners
   // ==========================
   useEffect(() => {
-    if (!socket) return;
+  if (!socket) return;
 
-    console.log("📡 Setting up socket listeners");
+  console.log("📡 Setting up socket listeners");
 
-    const handlers = {
-      roomCreated: ({ code }) => {
-        console.log("✅ Room created:", code);
-        setStatus("⏳ Chờ đối thủ tham gia...");
-      },
+  const handlers = {
+    roomCreated: ({ code }) => {
+      console.log("✅ Room created:", code);
+      setStatus("⏳ Chờ đối thủ tham gia...");
+    },
 
-      startGame: ({ white, black }) => {
-        console.log("🎮 Game started:", white, "vs", black);
-        setGameStarted(true);
-        setOpponentName(playerColor === "white" ? black : white);
-        setStatus(
-          playerColor === "white"
-            ? "🔄 Trắng đến lượt (Bạn)"
-            : "⏱️ Trắng đến lượt"
-        );
-      },
+    startGame: ({ white, black }) => {
+      console.log("🎮 Game started:", white, "vs", black);
+      setGameStarted(true);
+      setOpponentName(playerColor === "white" ? black : white);
+      setStatus(
+        playerColor === "white"
+          ? "🔄 Trắng đến lượt (Bạn)"
+          : "⏱️ Trắng đến lượt"
+      );
+    },
 
-      newMove: (move) => {
-        console.log("📥 Move received:", move);
-        if (!gameRef.current || !boardRef.current) {
-          console.warn("⚠️ Game or board not ready");
-          return;
-        }
-        const result = gameRef.current.move(move, { sloppy: true });
-        if (result) {
-          boardRef.current.position(gameRef.current.fen());
-          updateGameStatus();
-        }
-      },
+    // // 👇 THÊM EVENT PHÒNG BỊ HỦY
+    // roomClosed: ({ reason }) => {
+    //   console.log("🚪 Room closed:", reason);
+    //   setGameOver(true);
+    //   setStatus("⚠️ Phòng đã bị hủy. Đang quay lại trang chọn phòng...");
 
-      gameEnded: ({ reason }) => {
-        console.log("🏆 Game ended:", reason);
-        setGameOver(true);
-        setStatus(`✓ ${reason}`);
-      },
+    //   if (typeof window !== "undefined") {
+    //     setTimeout(() => {
+    //       router.push("/room/available");
+    //     }, 2500); // 2.5s cho người chơi kịp đọc
+    //   }
+    // },
 
-      gameOverDisconnect: ({ reason }) => {
-        console.log("🔌 Opponent disconnected:", reason);
-        setGameOver(true);
-        setStatus(`✅ ${reason}`);
-      },
+    newMove: (move) => {
+      console.log("📥 Move received:", move);
+      if (!gameRef.current || !boardRef.current) {
+        console.warn("⚠️ Game or board not ready");
+        return;
+      }
+      const result = gameRef.current.move(move, { sloppy: true });
+      if (result) {
+        boardRef.current.position(gameRef.current.fen());
+        updateGameStatus();
+      }
+    },
 
-      drawOffered: ({ from }) => {
-        console.log("📨 Draw offer from:", from);
-        setDrawOfferFrom(from);
-        setShowDrawOffer(true);
-      },
+    gameEnded: ({ reason }) => {
+      console.log("🏆 Game ended:", reason);
+      setGameOver(true);
+      setStatus(`✓ ${reason}`);
+    },
+gameOverDisconnect: ({ reason }) => {
+  console.log("🔌 Opponent disconnected:", reason);
+  setGameOver(true);
+  setStatus(`✅ ${reason} – Phòng đã bị hủy, đang quay lại trang chọn phòng...`);
 
-      drawAccepted: () => {
-        console.log("✅ Draw accepted");
-        setShowDrawOffer(false);
-        setGameOver(true);
-        setStatus("½-½ Hòa - Cả 2 đồng ý");
-      },
+  if (typeof window !== "undefined") {
+    setTimeout(() => {
+      router.push("/room/available"); // hoặc "/room" tùy bạn
+    }, 2500);
+  }
+},
 
-      drawDeclined: () => {
-        console.log("❌ Draw declined");
-        setShowDrawOffer(false);
-        if (typeof window !== "undefined") {
-          window.alert("Đối thủ từ chối đề nghị hòa");
-        }
-      },
 
-      error: (msg) => {
-        console.error("❌ Socket error:", msg);
-        setStatus(`❌ ${msg}`);
-      },
-    };
+    drawOffered: ({ from }) => {
+      console.log("📨 Draw offer from:", from);
+      setDrawOfferFrom(from);
+      setShowDrawOffer(true);
+    },
 
+    drawAccepted: () => {
+      console.log("✅ Draw accepted");
+      setShowDrawOffer(false);
+      setGameOver(true);
+      setStatus("½-½ Hòa - Cả 2 đồng ý");
+    },
+
+    drawDeclined: () => {
+      console.log("❌ Draw declined");
+      setShowDrawOffer(false);
+      if (typeof window !== "undefined") {
+        window.alert("Đối thủ từ chối đề nghị hòa");
+      }
+    },
+
+    error: (msg) => {
+      console.error("❌ Socket error:", msg);
+      setStatus(`❌ ${msg}`);
+    },
+  };
+
+  Object.entries(handlers).forEach(([event, handler]) => {
+    socket.on(event, handler);
+  });
+
+  return () => {
+    console.log("🔇 Removing socket listeners");
     Object.entries(handlers).forEach(([event, handler]) => {
-      socket.on(event, handler);
+      socket.off(event, handler);
     });
-
-    return () => {
-      console.log("🔇 Removing socket listeners");
-      Object.entries(handlers).forEach(([event, handler]) => {
-        socket.off(event, handler);
-      });
-    };
-  }, [socket, playerColor, updateGameStatus]);
+  };
+}, [socket, playerColor, updateGameStatus, router]);
 
   // ==========================
   // Khởi tạo bàn cờ
@@ -492,7 +511,7 @@ function GameOnlinePage() {
     }
 
     if (leaveRoom) leaveRoom();
-    router.push("/room");
+    router.push("/room/available");
   };
 
   const handleNewGame = () => {
