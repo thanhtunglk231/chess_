@@ -16,13 +16,13 @@ async function main() {
   // CÁC CHẾ ĐỘ XOÁ DỮ LIỆU
   // ============================
 
-  // 1️⃣ Xóa toàn bộ phòng
-  // const result = await Room.deleteMany({});
-  // console.log(`🗑 Đã xoá toàn bộ ${result.deletedCount} phòng`);
+  // 1️⃣ XOÁ TOÀN BỘ PHÒNG (ĐANG BẬT)
+  const result = await Room.deleteMany({});
+  console.log(`🗑 Đã xoá TOÀN BỘ ${result.deletedCount} phòng trong DB`);
 
   // 2️⃣ Xóa các phòng không có người chơi
-  const result = await Room.deleteMany({ players: { $size: 0 } });
-  console.log(`🗑 Đã xoá ${result.deletedCount} phòng (players = 0)`);
+  // const result = await Room.deleteMany({ players: { $size: 0 } });
+  // console.log(`🗑 Đã xoá ${result.deletedCount} phòng (players = 0)`);
 
   // 3️⃣ Xóa phòng theo status
   // const result = await Room.deleteMany({ status: "in-progress" });

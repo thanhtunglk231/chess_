@@ -62,6 +62,9 @@ function GameOnlinePage() {
   const [showDrawOffer, setShowDrawOffer] = useState(false);
   const [drawOfferFrom, setDrawOfferFrom] = useState(null);
 
+  // 🔢 Đếm ngược trước khi game bắt đầu
+  const [countdown, setCountdown] = useState(null); // số giây đếm ngược (5,4,3,2,1)
+
   // Track scripts loaded
   const [scriptsReady, setScriptsReady] = useState(false);
   const [boardReady, setBoardReady] = useState(false);
@@ -226,109 +229,139 @@ function GameOnlinePage() {
   // Socket listeners
   // ==========================
   useEffect(() => {
-  if (!socket) return;
+    if (!socket) return;
 
-  console.log("📡 Setting up socket listeners");
+    console.log("📡 Setting up socket listeners");
 
-  const handlers = {
-    roomCreated: ({ code }) => {
-      console.log("✅ Room created:", code);
-      setStatus("⏳ Chờ đối thủ tham gia...");
-    },
+    const handlers = {
+      roomCreated: ({ code }) => {
+        console.log("✅ Room created:", code);
+        setStatus("⏳ Chờ đối thủ tham gia...");
+      },
 
-    startGame: ({ white, black }) => {
-      console.log("🎮 Game started:", white, "vs", black);
-      setGameStarted(true);
-      setOpponentName(playerColor === "white" ? black : white);
-      setStatus(
-        playerColor === "white"
-          ? "🔄 Trắng đến lượt (Bạn)"
-          : "⏱️ Trắng đến lượt"
-      );
-    },
+      // 🔔 Khi đủ 2 người, server bắn matchFound ngay
+      matchFound: ({ white, black, message }) => {
+        console.log("🎯 Match found:", white, "vs", black);
+        const opp = playerColor === "white" ? black : white;
+        setOpponentName(opp);
 
-    // // 👇 THÊM EVENT PHÒNG BỊ HỦY
-    // roomClosed: ({ reason }) => {
-    //   console.log("🚪 Room closed:", reason);
-    //   setGameOver(true);
-    //   setStatus("⚠️ Phòng đã bị hủy. Đang quay lại trang chọn phòng...");
+        // 5s này vẫn chưa được đi quân
+        setGameStarted(false);
 
-    //   if (typeof window !== "undefined") {
-    //     setTimeout(() => {
-    //       router.push("/room/available");
-    //     }, 2500); // 2.5s cho người chơi kịp đọc
-    //   }
-    // },
+        // Bắt đầu đếm ngược 5 giây
+        setCountdown(5);
 
-    newMove: (move) => {
-      console.log("📥 Move received:", move);
-      if (!gameRef.current || !boardRef.current) {
-        console.warn("⚠️ Game or board not ready");
-        return;
-      }
-      const result = gameRef.current.move(move, { sloppy: true });
-      if (result) {
-        boardRef.current.position(gameRef.current.fen());
-        updateGameStatus();
-      }
-    },
+        setStatus(
+          message ||
+            "Đối thủ đã sẵn sàng, ván đấu sẽ bắt đầu sau 5 giây..."
+        );
+      },
 
-    gameEnded: ({ reason }) => {
-      console.log("🏆 Game ended:", reason);
-      setGameOver(true);
-      setStatus(`✓ ${reason}`);
-    },
-gameOverDisconnect: ({ reason }) => {
-  console.log("🔌 Opponent disconnected:", reason);
-  setGameOver(true);
-  setStatus(`✅ ${reason} – Phòng đã bị hủy, đang quay lại trang chọn phòng...`);
+      // ⏱ Sau 5s server mới bắn startGame
+      startGame: ({ white, black }) => {
+        console.log("🎮 Game started:", white, "vs", black);
 
-  if (typeof window !== "undefined") {
-    setTimeout(() => {
-      router.push("/room/available"); // hoặc "/room" tùy bạn
-    }, 2500);
-  }
-},
+        // Khi game bắt đầu thì tắt countdown
+        setCountdown(null);
 
+        setGameStarted(true);
+        setOpponentName(playerColor === "white" ? black : white);
+        setStatus(
+          playerColor === "white"
+            ? "🔄 Trắng đến lượt (Bạn)"
+            : "⏱️ Trắng đến lượt"
+        );
+      },
 
-    drawOffered: ({ from }) => {
-      console.log("📨 Draw offer from:", from);
-      setDrawOfferFrom(from);
-      setShowDrawOffer(true);
-    },
+      newMove: (move) => {
+        console.log("📥 Move received:", move);
+        if (!gameRef.current || !boardRef.current) {
+          console.warn("⚠️ Game or board not ready");
+          return;
+        }
+        const result = gameRef.current.move(move, { sloppy: true });
+        if (result) {
+          boardRef.current.position(gameRef.current.fen());
+          updateGameStatus();
+        }
+      },
 
-    drawAccepted: () => {
-      console.log("✅ Draw accepted");
-      setShowDrawOffer(false);
-      setGameOver(true);
-      setStatus("½-½ Hòa - Cả 2 đồng ý");
-    },
+      gameEnded: ({ reason }) => {
+        console.log("🏆 Game ended:", reason);
+        setGameOver(true);
+        setStatus(`✓ ${reason}`);
+      },
 
-    drawDeclined: () => {
-      console.log("❌ Draw declined");
-      setShowDrawOffer(false);
-      if (typeof window !== "undefined") {
-        window.alert("Đối thủ từ chối đề nghị hòa");
-      }
-    },
+      gameOverDisconnect: ({ reason }) => {
+        console.log("🔌 Opponent disconnected:", reason);
+        setGameOver(true);
+        setStatus(
+          `✅ ${reason} – Phòng đã bị hủy, đang quay lại trang chọn phòng...`
+        );
 
-    error: (msg) => {
-      console.error("❌ Socket error:", msg);
-      setStatus(`❌ ${msg}`);
-    },
-  };
+        if (typeof window !== "undefined") {
+          setTimeout(() => {
+            router.push("/room/available"); // hoặc "/room"
+          }, 2500);
+        }
+      },
 
-  Object.entries(handlers).forEach(([event, handler]) => {
-    socket.on(event, handler);
-  });
+      drawOffered: ({ from }) => {
+        console.log("📨 Draw offer from:", from);
+        setDrawOfferFrom(from);
+        setShowDrawOffer(true);
+      },
 
-  return () => {
-    console.log("🔇 Removing socket listeners");
+      drawAccepted: () => {
+        console.log("✅ Draw accepted");
+        setShowDrawOffer(false);
+        setGameOver(true);
+        setStatus("½-½ Hòa - Cả 2 đồng ý");
+      },
+
+      drawDeclined: () => {
+        console.log("❌ Draw declined");
+        setShowDrawOffer(false);
+        if (typeof window !== "undefined") {
+          window.alert("Đối thủ từ chối đề nghị hòa");
+        }
+      },
+
+      error: (msg) => {
+        console.error("❌ Socket error:", msg);
+        setStatus(`❌ ${msg}`);
+      },
+    };
+
     Object.entries(handlers).forEach(([event, handler]) => {
-      socket.off(event, handler);
+      socket.on(event, handler);
     });
-  };
-}, [socket, playerColor, updateGameStatus, router]);
+
+    return () => {
+      console.log("🔇 Removing socket listeners");
+      Object.entries(handlers).forEach(([event, handler]) => {
+        socket.off(event, handler);
+      });
+    };
+  }, [socket, playerColor, updateGameStatus, router]);
+
+  // ==========================
+  // Đếm ngược trước khi bắt đầu game
+  // ==========================
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown <= 0) {
+      setCountdown(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   // ==========================
   // Khởi tạo bàn cờ
@@ -356,7 +389,7 @@ gameOverDisconnect: ({ reason }) => {
       try {
         boardRef.current.destroy();
       } catch {}
-        boardRef.current = null;
+      boardRef.current = null;
     }
 
     container.innerHTML = "";
@@ -374,6 +407,7 @@ gameOverDisconnect: ({ reason }) => {
         showNotation: false,
 
         onDragStart: (source, piece) => {
+          // Chưa start game hoặc game over thì không cho đi
           if (!gameStarted || gameOver || newGame.game_over()) return false;
 
           const myTurn =
@@ -502,7 +536,6 @@ gameOverDisconnect: ({ reason }) => {
         await fetch("/api/rooms/leave", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // dùng đúng roomCode thay vì biến không tồn tại "code"
           body: JSON.stringify({ code: roomCode }),
         });
       }
@@ -611,9 +644,12 @@ gameOverDisconnect: ({ reason }) => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Board */}
+            
+                   {/* Board */}
+
             <div className="lg:col-span-2">
               <div className="p-5 border-[10px] border-amber-900 rounded-xl shadow-[0_0_25px_rgba(255,165,0,0.7)] bg-black/75 backdrop-blur">
+               
                 <div
                   id="myBoard"
                   className="touch-none select-none"
@@ -638,6 +674,19 @@ gameOverDisconnect: ({ reason }) => {
               <h2 className="font-semibold text-lg text-gray-200">
                 Thông tin ván đấu
               </h2>
+                     {/* ⏳ Đếm ngược trước khi game bắt đầu */}
+                {!gameStarted && countdown !== null && countdown > 0 && (
+                  <div className="mb-3 text-center">
+                    <div className="inline-block px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-400/70">
+                      <div className="text-xs text-yellow-300 tracking-wide mb-1">
+                        VÁN ĐẤU SẮP BẮT ĐẦU
+                      </div>
+                      <div className="text-3xl font-extrabold text-yellow-400 animate-pulse">
+                        {countdown}s
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-yellow-400 font-semibold text-sm">
