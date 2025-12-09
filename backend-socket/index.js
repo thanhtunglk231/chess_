@@ -12,7 +12,7 @@ import EloHistory from "../models/EloHistory.js";
 import MatchHistory from "../models/MatchHistory.js";
 import WinRateByColor from "../models/WinRateByColor.js";
 
-dotenv.config({ path: ".env.local" });
+dotenv.config();
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const CORS_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
