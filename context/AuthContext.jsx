@@ -81,38 +81,28 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 🔴 FIX: Logout phải clear state VÀ redirect
   const logout = async () => {
-    try {
-      console.log("🚪 Logging out...");
+  try {
+    console.log("🚪 Logging out...");
 
-      // Call logout API
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
 
-      console.log("✅ Logout API success");
-    } catch (error) {
-      console.error("Logout API error:", error);
-    } finally {
-      // 🔴 QUAN TRỌNG: Clear state NGAY dù có lỗi hay không
-      console.log("🧹 Clearing user state...");
-      setUser(null);
+    console.log("✅ Logout API success");
+  } catch (error) {
+    console.error("Logout API error:", error);
+  } finally {
+    console.log("🧹 Clearing user state...");
+    setUser(null);
 
-      // Clear cookie client-side (backup)
-      document.cookie = "token=; Max-Age=0; path=/; SameSite=Lax";
+    // Nếu cookie trên server tên khác thì dòng này cũng chẳng xoá được
+    // nhưng thôi để như backup cũng được
+    document.cookie = "token=; Max-Age=0; path=/; SameSite=Lax";
+  }
+};
 
-      // Redirect về login
-      console.log("↩️ Redirecting to login...");
-      router.push("/login");
-
-      // Force refresh để clear cache
-      setTimeout(() => {
-        router.refresh();
-      }, 100);
-    }
-  };
 
   // Helper để check auth manually (dùng khi cần)
   const checkAuth = async () => {
